@@ -1,6 +1,0 @@
-project_id   = "gjh-hack"
-region       = "asia-northeast1"
-app_name     = "gjh"
-github_owner = "Nagomu0128"
-github_repo  = "gjh-hack"
-db_password  = "gjh-dev-db-2026!"
