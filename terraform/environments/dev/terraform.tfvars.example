@@ -1,6 +1,0 @@
-project_id   = "your-gcp-project-id"
-region       = "asia-northeast1"
-app_name     = "gjh"
-github_owner = "your-github-user"
-github_repo  = "gjh-hack"
-db_password  = "change-me-to-a-strong-password"
