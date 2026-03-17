@@ -1,0 +1,8 @@
+runConfig:
+  concurrency: 100
+  memoryMiB: 512
+  cpu: 1
+
+env:
+  - variable: BACKEND_URL
+    value: https://gitalk-backend-jyhcnrjueq-an.a.run.app
