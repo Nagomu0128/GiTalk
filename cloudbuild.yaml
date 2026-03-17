@@ -27,6 +27,9 @@ steps:
       - "--region"
       - "${_REGION}"
 
+options:
+  logging: CLOUD_LOGGING_ONLY
+
 substitutions:
   _ARTIFACT_REGISTRY_URL: ""
   _IMAGE_NAME: ""

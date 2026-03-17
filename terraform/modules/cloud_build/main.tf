@@ -1,3 +1,38 @@
+resource "google_service_account" "cloudbuild" {
+  account_id   = "${var.trigger_name}-cb"
+  display_name = "Cloud Build Service Account for ${var.trigger_name}"
+}
+
+resource "google_project_iam_member" "cloudbuild_builder" {
+  project = var.project_id
+  role    = "roles/cloudbuild.builds.builder"
+  member  = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
+
+resource "google_project_iam_member" "cloudbuild_artifact_writer" {
+  project = var.project_id
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
+
+resource "google_project_iam_member" "cloudbuild_run_admin" {
+  project = var.project_id
+  role    = "roles/run.admin"
+  member  = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
+
+resource "google_project_iam_member" "cloudbuild_sa_user" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
+
+resource "google_project_iam_member" "cloudbuild_log_writer" {
+  project = var.project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
+
 resource "google_cloudbuildv2_repository" "this" {
   location          = var.connection_region
   name              = var.github_repo
@@ -8,7 +43,7 @@ resource "google_cloudbuildv2_repository" "this" {
 resource "google_cloudbuild_trigger" "this" {
   name            = var.trigger_name
   location        = var.connection_region
-  service_account = "projects/${var.project_id}/serviceAccounts/${var.project_number}-compute@developer.gserviceaccount.com"
+  service_account = google_service_account.cloudbuild.id
 
   repository_event_config {
     repository = google_cloudbuildv2_repository.this.id
