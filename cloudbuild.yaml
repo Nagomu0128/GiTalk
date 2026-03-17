@@ -1,0 +1,37 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "-t"
+      - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE_NAME}:${COMMIT_SHA}"
+      - "-t"
+      - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE_NAME}:latest"
+      - "-f"
+      - "backend/Dockerfile"
+      - "backend"
+
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "--all-tags"
+      - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE_NAME}"
+
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: "gcloud"
+    args:
+      - "run"
+      - "deploy"
+      - "${_CLOUD_RUN_SERVICE}"
+      - "--image"
+      - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE_NAME}:${COMMIT_SHA}"
+      - "--region"
+      - "${_REGION}"
+
+images:
+  - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE_NAME}"
+
+substitutions:
+  _ARTIFACT_REGISTRY_URL: ""
+  _IMAGE_NAME: ""
+  _CLOUD_RUN_SERVICE: ""
+  _REGION: ""

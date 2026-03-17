@@ -18,39 +18,12 @@ resource "google_cloudbuild_trigger" "this" {
     }
   }
 
-  build {
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      args = [
-        "build",
-        "-t", "${var.artifact_registry_url}/${var.image_name}:$COMMIT_SHA",
-        "-t", "${var.artifact_registry_url}/${var.image_name}:latest",
-        "-f", var.dockerfile_path,
-        var.build_context,
-      ]
-    }
+  filename = "cloudbuild.yaml"
 
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      args = [
-        "push",
-        "--all-tags",
-        "${var.artifact_registry_url}/${var.image_name}",
-      ]
-    }
-
-    step {
-      name       = "gcr.io/google.com/cloudsdktool/cloud-sdk"
-      entrypoint = "gcloud"
-      args = [
-        "run", "deploy", var.cloud_run_service_name,
-        "--image", "${var.artifact_registry_url}/${var.image_name}:$COMMIT_SHA",
-        "--region", var.region,
-      ]
-    }
-
-    images = [
-      "${var.artifact_registry_url}/${var.image_name}",
-    ]
+  substitutions = {
+    _ARTIFACT_REGISTRY_URL = var.artifact_registry_url
+    _IMAGE_NAME            = var.image_name
+    _CLOUD_RUN_SERVICE     = var.cloud_run_service_name
+    _REGION                = var.region
   }
 }
