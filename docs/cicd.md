@@ -1,210 +1,84 @@
-# CI/CD パイプライン仕様書
+# CI/CD仕様書
 
-GitHub Actionsで2本のパイプラインを構成
+- `frontend`,`backend`の２本のパイプラインを作成。並列実行
+- アプリケーションのみに適用する。インフラは手動管理。
+- CIはGitHub Actions、CDはCloud Buildで運用する。
+- キャッシュ戦略は現時点では規模が小さいため行わない
+- 10分を超えるビルドは打ち切る
 
----
+## 環境変数・シークレットの保護
 
-### トリガー
+Secret Managerと環境変数を秘匿度に応じて分離する。
 
-- CI:PR作成
-- CD:`main`にマージ
+- **シークレット（漏洩時に被害が出るもの）**: Secret Managerで管理
+  - 例: DATABASE_URL, APIキー, Webhook URL
+  - Cloud Runへは起動時にSecret Managerから注入
+  - Cloud Buildへは`availableSecrets`で注入
+- **環境変数（漏洩しても問題ない設定値）**: Cloud Run設定 / Terraformで管理
+  - 例: NODE_ENV, PORT, REGION
+- `.env`ファイルはGitにコミットしない（`.gitignore`に追加）
 
-### ディレクトリ構成
+## ブランチ保護
 
-```
-.github/
-  workflows/
-    infra.yml    # Terraform plan/apply
-    app.yml      # App lint/build/test/deploy
-```
+GitHub Branch Rulesで`main`への直接pushを禁止し、PRマージのみに制限する。
 
-## 1. Infra パイプライン (`infra.yml`)
+## 通知
 
-Terraform による GCP インフラ管理。
+ログで確認する
 
-### トリガー
+## backendパイプライン
 
-```yaml
-on:
-  pull_request:
-    paths:
-      - "terraform/**"
-  push:
-    branches: [main]
-    paths:
-      - "terraform/**"
-```
+### trigger
 
-### フロー
+CI: PR作成
+CD: `main`にマージ
 
-| ステージ                        | PR 時                 | main push 時 |
-| ------------------------------- | --------------------- | ------------ |
-| `terraform fmt -check`          | ○                     | ○            |
-| `terraform init`                | ○                     | ○            |
-| `terraform validate`            | ○                     | ○            |
-| `terraform plan`                | ○ (PR コメントに出力) | ○            |
-| `terraform apply -auto-approve` | ×                     | ○            |
+### job
 
-### 認証
+#### CI
 
-- **Workload Identity Federation** を使う（サービスアカウントキーの JSON は避ける）
-- `google-github-actions/auth@v2` + `google-github-actions/setup-gcloud@v2`
-- 必要な IAM ロール: `roles/editor` または必要最小限のリソース別ロール
+テストフレームワーク未選定のため、testは一旦外す
 
-### GitHub Secrets / Variables
+1. lint
+2. docker build（pushなし、ビルド確認のみ）
 
-| 名前                      | 用途                                                                                                               |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `GCP_PROJECT_ID`          | `gjh-hack`                                                                                                         |
-| `GCP_WIF_PROVIDER`        | Workload Identity プロバイダー (例: `projects/123/locations/global/workloadIdentityPools/github/providers/github`) |
-| `GCP_WIF_SERVICE_ACCOUNT` | Terraform 用サービスアカウント                                                                                     |
-| `TF_VAR_db_password`      | Cloud SQL パスワード (sensitive)                                                                                   |
-| `TF_VAR_github_owner`     | GitHub オーナー                                                                                                    |
-| `TF_VAR_github_repo`      | GitHub リポジトリ名                                                                                                |
+#### CD
 
-### ポイント
+1. lint
+2. test
+3. docker build & push（Artifact Registry）
+4. Cloud Runデプロイ
 
-- `terraform/environments/dev/` を `working-directory` に指定する
-- tfstate はリモートバックエンド（GCS）に移行すること（`main.tf` の TODO 参照）。ローカル state のまま CI で回すと壊れる
-- PR 時に `terraform plan` の結果をコメントに貼ると差分レビューしやすい → `actions/github-script` や `terraform-plan` アクション活用
-- `terraform fmt -check` が失敗したら早期終了させる
+### ロールバック戦略
 
----
+デプロイ失敗時にCloud Runの前リビジョンに戻す。
 
-## 2. App パイプライン (`app.yml`)
+- デプロイ後にログを確認し、問題があれば手動でロールバックする
 
-アプリケーションのビルド・テスト・デプロイ。
+## frontendパイプライン
 
-### トリガー
+### trigger
 
-```yaml
-on:
-  pull_request:
-    paths:
-      - "frontend/**"
-      - "backend/**"
-  push:
-    branches: [main]
-    paths:
-      - "frontend/**"
-      - "backend/**"
-```
+CI: PR作成
+CD: `main`にマージ
 
-### フロー
+### job
 
-```
-PR 時:     lint → build → test
-main 時:   lint → build → test → docker push → deploy (Cloud Run)
-```
+#### CI
 
-### Frontend ジョブ
+テストはなしで開発
 
-```yaml
-steps:
-  - uses: actions/checkout@v4
-  - uses: pnpm/action-setup@v4
-  - uses: actions/setup-node@v4
-    with:
-      node-version: 22
-      cache: pnpm
-      cache-dependency-path: frontend/pnpm-lock.yaml
-  - run: pnpm install --frozen-lockfile
-    working-directory: frontend
-  - run: pnpm lint
-    working-directory: frontend
-  - run: pnpm build
-    working-directory: frontend
-```
+1. lint
+2. build確認
 
-### Backend ジョブ
+#### CD
 
-```yaml
-steps:
-  - uses: actions/checkout@v4
-  - uses: pnpm/action-setup@v4
-  - uses: actions/setup-node@v4
-    with:
-      node-version: 22
-      cache: pnpm
-      cache-dependency-path: backend/pnpm-lock.yaml
-  - run: pnpm install --frozen-lockfile
-    working-directory: backend
-  - run: pnpm build
-    working-directory: backend
-```
+1. lint
+2. build
+3. Firebase Hostingにデプロイ
 
-### Deploy ジョブ（main push 時のみ）
+### ロールバック戦略
 
-既存の Cloud Build トリガー（Terraform で管理済み）と**役割が重複する**ので、どちらか一方を選ぶ:
+Firebase Hostingの前リリースに戻す
 
-| 方式                             | メリット                                                     | デメリット                                                      |
-| -------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------- |
-| **A: Cloud Build に任せる**      | Terraform で一元管理。GitHub Actions は lint/build/test だけ | GitHub 上でデプロイ状況が見えにくい                             |
-| **B: GitHub Actions でデプロイ** | PR ステータスで完結。environment + approval が使える         | Cloud Build モジュールが不要になる。gcloud コマンドの管理が必要 |
-
-#### 方式 B の場合の deploy ステップ
-
-```yaml
-deploy:
-  needs: [frontend, backend]
-  if: github.ref == 'refs/heads/main'
-  runs-on: ubuntu-latest
-  environment: production
-  steps:
-    - uses: actions/checkout@v4
-    - uses: google-github-actions/auth@v2
-      with:
-        workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
-        service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
-    - uses: google-github-actions/setup-gcloud@v2
-    - name: Build and push
-      run: |
-        gcloud builds submit backend/ \
-          --tag $REGION-docker.pkg.dev/$PROJECT_ID/gjh-repo/gjh-backend:${{ github.sha }}
-    - name: Deploy to Cloud Run
-      run: |
-        gcloud run deploy gjh-backend \
-          --image $REGION-docker.pkg.dev/$PROJECT_ID/gjh-repo/gjh-backend:${{ github.sha }} \
-          --region asia-northeast1
-```
-
----
-
-## Workload Identity Federation セットアップ
-
-GitHub Actions から GCP にキーレス認証するための前提作業:
-
-```bash
-# 1. Workload Identity Pool 作成
-gcloud iam workload-identity-pools create "github" \
-  --location="global" \
-  --display-name="GitHub Actions"
-
-# 2. OIDC Provider 作成
-gcloud iam workload-identity-pools providers create-oidc "github" \
-  --location="global" \
-  --workload-identity-pool="github" \
-  --display-name="GitHub" \
-  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
-  --issuer-uri="https://token.actions.githubusercontent.com"
-
-# 3. サービスアカウントに impersonation 許可
-gcloud iam service-accounts add-iam-policy-binding SA_EMAIL \
-  --role="roles/iam.workloadIdentityUser" \
-  --member="principalSet://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/OWNER/REPO"
-```
-
-これを Terraform で管理するなら `google_iam_workload_identity_pool` リソースを追加する。
-
----
-
-## ディレクトリ構成
-
-```
-.github/
-  workflows/
-    infra.yml    # Terraform plan/apply
-    app.yml      # App lint/build/test/deploy
-```
-
-> **注意**: 現在 `.github/workflow/action.yml`（単数形）が空ファイルで存在する。GitHub Actions は `.github/workflows/`（複数形）を認識するので、ディレクトリ名を修正すること。
+- デプロイ後にログを確認し、問題があれば手動でロールバックする
