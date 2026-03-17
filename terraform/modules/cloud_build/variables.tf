@@ -6,6 +6,16 @@ variable "region" {
   type = string
 }
 
+variable "connection_region" {
+  type        = string
+  description = "Region for the Cloud Build GitHub connection"
+}
+
+variable "connection_name" {
+  type        = string
+  description = "Name of the existing Cloud Build GitHub connection"
+}
+
 variable "github_owner" {
   type = string
 }
