@@ -16,6 +16,16 @@ variable "connection_name" {
   description = "Name of the existing Cloud Build GitHub connection"
 }
 
+variable "project_id" {
+  type        = string
+  description = "GCP project ID"
+}
+
+variable "project_number" {
+  type        = string
+  description = "GCP project number"
+}
+
 variable "github_owner" {
   type = string
 }

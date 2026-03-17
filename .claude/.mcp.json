@@ -3,19 +3,19 @@
     "gcloud": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "gcloud-mcp", "--project", "gjh-hack"],
+      "args": ["-y", "gcloud-mcp", "--project", "gitalk-01100128"],
       "env": {}
     },
     "gcs": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@google-cloud/storage-mcp", "--project", "gjh-hack"],
+      "args": ["-y", "@google-cloud/storage-mcp", "--project", "gitalk-01100128"],
       "env": {}
     },
     "gsql": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@google-cloud/sql-mcp", "--project", "gjh-hack"],
+      "args": ["-y", "@google-cloud/sql-mcp", "--project", "gitalk-01100128"],
       "env": {}
     },
     "firebase": {
