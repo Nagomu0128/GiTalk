@@ -121,7 +121,7 @@ module "cloud_run_backend" {
 
   service_name = "${var.app_name}-backend"
   region       = var.region
-  image        = "${module.artifact_registry.repository_url}/${var.app_name}-backend:latest"
+  image        = "us-docker.pkg.dev/cloudrun/container/hello"
 
   cpu                = "1"
   memory             = "512Mi"
