@@ -152,13 +152,17 @@ module "cloud_run_backend" {
 # ============================================================
 # Cloud Build
 # ============================================================
+data "google_project" "this" {}
+
 module "cloud_build_backend" {
   source = "../../modules/cloud_build"
 
+  project_id             = var.project_id
+  project_number         = data.google_project.this.number
   trigger_name           = "${var.app_name}-backend-deploy"
   region                 = var.region
   connection_region      = "asia-northeast2"
-  connection_name        = "gjh-hack-host"
+  connection_name        = "gitalk-host"
   github_owner           = var.github_owner
   github_repo            = var.github_repo
   branch_pattern         = "^main$"
