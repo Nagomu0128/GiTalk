@@ -1,11 +1,18 @@
+resource "google_cloudbuildv2_repository" "this" {
+  location          = var.connection_region
+  name              = var.github_repo
+  parent_connection = var.connection_name
+  remote_uri        = "https://github.com/${var.github_owner}/${var.github_repo}.git"
+}
+
 resource "google_cloudbuild_trigger" "this" {
   name     = var.trigger_name
-  location = var.region
+  location = var.connection_region
 
-  github {
-    owner = var.github_owner
-    name  = var.github_repo
+  service_account = "projects/${data.google_project.this.project_id}/serviceAccounts/${data.google_project.this.number}@cloudbuild.gserviceaccount.com"
 
+  repository_event_config {
+    repository = google_cloudbuildv2_repository.this.id
     push {
       branch = var.branch_pattern
     }
@@ -47,3 +54,5 @@ resource "google_cloudbuild_trigger" "this" {
     ]
   }
 }
+
+data "google_project" "this" {}

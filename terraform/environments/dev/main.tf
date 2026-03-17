@@ -68,7 +68,7 @@ module "cloud_sql" {
   database_version    = "POSTGRES_15"
   tier                = "db-f1-micro"
   disk_size_gb        = 10
-  enable_public_ip    = false
+  enable_public_ip    = true
   enable_backup       = false
   deletion_protection = false
   database_name       = var.app_name
@@ -144,6 +144,7 @@ module "cloud_run_backend" {
   cloud_sql_instance    = module.cloud_sql.connection_name
   service_account_email = google_service_account.backend.email
   allow_unauthenticated = true
+  deletion_protection   = false
 
   depends_on = [google_project_service.apis]
 }
@@ -154,15 +155,17 @@ module "cloud_run_backend" {
 module "cloud_build_backend" {
   source = "../../modules/cloud_build"
 
-  trigger_name          = "${var.app_name}-backend-deploy"
-  region                = var.region
-  github_owner          = var.github_owner
-  github_repo           = var.github_repo
-  branch_pattern        = "^main$"
-  artifact_registry_url = module.artifact_registry.repository_url
-  image_name            = "${var.app_name}-backend"
-  dockerfile_path       = "backend/Dockerfile"
-  build_context         = "backend"
+  trigger_name           = "${var.app_name}-backend-deploy"
+  region                 = var.region
+  connection_region      = "asia-northeast2"
+  connection_name        = "gjh-hack-host"
+  github_owner           = var.github_owner
+  github_repo            = var.github_repo
+  branch_pattern         = "^main$"
+  artifact_registry_url  = module.artifact_registry.repository_url
+  image_name             = "${var.app_name}-backend"
+  dockerfile_path        = "backend/Dockerfile"
+  build_context          = "backend"
   cloud_run_service_name = module.cloud_run_backend.service_name
 
   depends_on = [google_project_service.apis]
