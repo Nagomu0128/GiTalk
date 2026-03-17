@@ -30,6 +30,9 @@ steps:
 images:
   - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE_NAME}"
 
+options:
+  logging: CLOUD_LOGGING_ONLY
+
 substitutions:
   _ARTIFACT_REGISTRY_URL: ""
   _IMAGE_NAME: ""
