@@ -6,10 +6,9 @@ resource "google_cloudbuildv2_repository" "this" {
 }
 
 resource "google_cloudbuild_trigger" "this" {
-  name     = var.trigger_name
-  location = var.connection_region
-
-  service_account = "projects/${var.project_id}/serviceAccounts/${var.project_number}@cloudbuild.gserviceaccount.com"
+  name            = var.trigger_name
+  location        = var.connection_region
+  service_account = "projects/${var.project_id}/serviceAccounts/${var.project_number}-compute@developer.gserviceaccount.com"
 
   repository_event_config {
     repository = google_cloudbuildv2_repository.this.id
