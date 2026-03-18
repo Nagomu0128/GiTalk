@@ -80,15 +80,17 @@ Phase 6: 画面 UI
   [T6-5] 会話画面の統合 ────────────── depends on: T5-3, T5-4, T6-1
          (左右分割レイアウト、ヘッダー、push ダイアログ)
 
-Phase 7: GitHub 的機能
+Phase 7: GitHub 的機能 + 検索
 ──────────────────────────────────────────────────────────
   [T7-1] Repository API ──────────── depends on: T1-1, T1-2
   [T7-2] Push 機能 ───────────────── depends on: T7-1, T2-2
-         (RepositoryBranch スナップショット作成、UPSERT)
+         (RepositoryNode コピー作成、UPSERT)
   [T7-3] 公開範囲制御 ────────────── depends on: T7-1
   [T7-4] リポジトリ一覧 UI ────────── depends on: T7-1, T6-1
   [T7-5] リポジトリ詳細 UI ────────── depends on: T7-1, T5-1, T5-2
-         (閲覧専用ツリービュー)
+         (閲覧専用ツリービュー、RepositoryNode 表示)
+  [T7-6] 全文検索 ────────────────── depends on: T2-3, T7-1
+         (GET /v1/search、tsvector + GIN インデックス)
 
 Phase 8: MVP後（優先度順）
 ──────────────────────────────────────────────────────────
@@ -170,7 +172,7 @@ T0-1 → T1-1 → T2-1 → T2-3 → T2-4 → T3-1 → T3-2 → T3-3/T3-4 → T5-
 | ID | タスク | 内容 | 成果物 |
 |----|--------|------|--------|
 | T0-1 | DB基盤 | Drizzle ORM + Drizzle Kit 導入、DB接続設定、初期スキーマ作成（01-data-model.md に基づく） | `db/schema.ts`, `db/client.ts`, マイグレーションファイル |
-| T0-2 | Firebase Auth セットアップ | Firebase Console で Authentication 有効化、Google / Email プロバイダ設定 | Firebase Console 設定完了 |
+| T0-2 | Firebase Auth セットアップ | Firebase Console で Authentication 有効化、Google プロバイダ設定 | Firebase Console 設定完了 |
 | T0-3 | Hono ミドルウェア基盤 | CORS 設定、エラーハンドラー（Result → HTTP レスポンス、ts-pattern 使用）、リクエストログ | `middleware/error-handler.ts`, index.ts の CORS 設定 |
 | T0-4 | 共有ユーティリティ | errorBuilder、appLogger の実装 | `shared/error.ts`, `shared/logger.ts` |
 
@@ -197,7 +199,7 @@ T0-1 → T1-1 → T2-1 → T2-3 → T2-4 → T3-1 → T3-2 → T3-3/T3-4 → T5-
 |----|--------|------|--------|
 | T3-1 | Gemini API 連携 | Vertex AI SDK（@google-cloud/vertexai）セットアップ、generateContentStream 呼出 | `infra/gemini.ts` |
 | T3-2 | SSE ストリーミング | Hono の SSE レスポンス実装、フロントエンドの EventSource 受信 | `service/chat.service.ts` の SSE 部分、フロントエンド hooks |
-| T3-3 | チャット API | `POST /v1/conversations/:id/chat`。コンテキスト構築 → Gemini 呼出 → SSE ストリーム → ノード保存 → head 更新 | `routes/chat.route.ts`, `routes/chat.ts` |
+| T3-3 | チャット API | `POST /v1/conversations/:id/chat`。コンテキスト構築 → Gemini 呼出 → SSE ストリーム → ノード保存（楽観的ロック）→ head 更新。DB保存失敗時は `save_failed` イベント送信 + `POST /v1/conversations/:id/retry-save` エンドポイント。初回メッセージ後にタイトル自動生成（非同期） | `routes/chat.route.ts`, `routes/chat.ts` |
 | T3-4 | チャット UI | ChatView, MessageBubble（Markdown レンダリング + DOMPurify）, MessageInput（モデル選択、コンテキストモード選択） | `components/chat/*` |
 
 ### Phase 4: Git 的操作
@@ -236,7 +238,8 @@ T0-1 → T1-1 → T2-1 → T2-3 → T2-4 → T3-1 → T3-2 → T3-3/T3-4 → T5-
 | T7-2 | Push 機能 | `POST /v1/repositories/:id/push`。RepositoryBranch UPSERT（同一 repo+branch は UPDATE）、選択的 push | `routes/repositories.ts` 内 |
 | T7-3 | 公開範囲制御 | visibility チェック、private は所有者以外 404 返却、optionalAuthMiddleware 適用 | アクセス制御ロジック |
 | T7-4 | リポジトリ一覧 UI | リスト形式、公開範囲バッジ、フィルター、ソート | `app/dashboard/repositories/page.tsx` |
-| T7-5 | リポジトリ詳細 UI | メタ情報、ブランチ一覧タブ、閲覧専用ツリービュー（ノードクリックで内容表示）、設定タブ | `app/repository/[id]/page.tsx` |
+| T7-5 | リポジトリ詳細 UI | メタ情報、ブランチ一覧タブ、閲覧専用ツリービュー（RepositoryNode 表示、ノードクリックで内容表示）、設定タブ | `app/repository/[id]/page.tsx` |
+| T7-6 | 全文検索 | `GET /v1/search`。Node.search_vector (tsvector + GIN) による会話・ノード検索。検索結果UI | `routes/search.route.ts`, `routes/search.ts`, 検索UIコンポーネント |
 
 ## MVP完了の定義
 
