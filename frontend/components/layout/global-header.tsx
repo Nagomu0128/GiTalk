@@ -4,6 +4,7 @@ import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { useAuthStore } from '@/stores/auth-store';
+import { SearchBar } from './search-bar';
 
 export function GlobalHeader() {
   const user = useAuthStore((s) => s.user);
@@ -18,7 +19,8 @@ export function GlobalHeader() {
       <button onClick={() => router.push('/dashboard')} className="text-lg font-bold text-gray-900">
         GiTalk
       </button>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
+        <SearchBar />
         <span className="text-sm text-gray-600">{user?.displayName ?? 'User'}</span>
         <button
           onClick={handleLogout}
