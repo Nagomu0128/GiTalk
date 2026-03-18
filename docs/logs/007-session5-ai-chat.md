@@ -56,5 +56,25 @@
   3. ノード保存 → DB に1件保存確認 ✅
   4. ブランチ head 更新 → node_id 一致 ✅
 
+## docs/specs との差分
+
+specsで定義した仕様と実際の実装が異なる箇所を記録する。
+
+| specs の記述 | 実際の実装 | 理由 |
+|-------------|-----------|------|
+| **04-ai-integration.md:** Vertex AI 経由で Gemini API を使用（`@google-cloud/vertexai`） | Google AI SDK（`@google/generative-ai`）+ API キーベース | Vertex AI でプロジェクト `gitalk-01100128` から全モデルが 404/403 になる問題が解決できなかったため。Cloud Run デプロイ時に再検討が必要 |
+| **04-ai-integration.md:** モデル `gemini-1.5-flash` / `gemini-1.5-pro` | `gemini-2.5-flash` がデフォルト。`gemini-2.0-flash`, `gemini-2.0-flash-lite`, `gemini-2.5-pro` もサポート | `gemini-1.5-flash` / `gemini-2.0-flash` が利用不可（404）。`gemini-2.5-flash` が最新の利用可能モデル |
+| **08-infrastructure.md:** 環境変数 `GEMINI_MODEL` のみ | `GEMINI_API_KEY` 環境変数が追加で必要 | Vertex AI（サービスアカウント認証）→ Google AI（API キー認証）に変更したため |
+| **08-infrastructure.md:** Cloud Run 環境変数に `GEMINI_MODEL` のみ記載 | Cloud Run に `GEMINI_API_KEY` を Secret Manager 経由で設定する必要がある | API キーベースに変更したため。Terraform の Secret Manager モジュールで管理すべき |
+| **12-development-guide.md:** `gcloud auth application-default login` で Vertex AI にアクセス | `.env` に `GEMINI_API_KEY` を設定 | ADC では Google AI SDK は使えないため。ローカル開発では `.env` ファイルで管理 |
+| **04-ai-integration.md:** Vertex AI SDK の `VertexAI` クラスを使用 | `GoogleGenerativeAI` クラス（`@google/generative-ai`）を使用 | SDK が異なるため API も異なる。`generateContentStream` の戻り値の型名が `StreamGenerateContentResult` → `GenerateContentStreamResult` |
+| **07-api-design.md:** チャットのデフォルトモデル `gemini-1.5-flash` | デフォルトモデル `gemini-2.5-flash` | モデル可用性に合わせて変更 |
+
+### 今後の対応が必要な項目
+- `docs/specs/04-ai-integration.md` のモデル名・SDK 情報を更新すべき
+- `docs/specs/08-infrastructure.md` に `GEMINI_API_KEY` 環境変数を追加すべき
+- `docs/specs/12-development-guide.md` のローカル開発手順を Google AI SDK ベースに更新すべき
+- Cloud Run デプロイ時に `GEMINI_API_KEY` を Secret Manager に追加し、Terraform で管理すべき
+
 ## 次のステップ
 Session 6: チャット UI + ツリー基盤（T3-4 + T5-1 + T5-2）
