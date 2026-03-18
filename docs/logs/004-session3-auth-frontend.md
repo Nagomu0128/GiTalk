@@ -32,7 +32,7 @@
 
 ## スキップした項目
 - **T0-2 Firebase Console 設定:** Firebase Console での Authentication 有効化と Google プロバイダ設定はユーザーが実施済み
-- **Firebase ビルドスクリプト承認:** `@firebase/util`, `protobufjs` の pnpm approve-builds 未実施。動作に支障なし
+- **Firebase ビルドスクリプト承認:** `@firebase/util`, `protobufjs` の pnpm approve-builds はユーザーが手動で実施済み。`frontend/pnpm-workspace.yaml` が生成されコミット済み
 - **E2E 認証テスト:** Firebase プロジェクト + バックエンド起動が必要なため未実施
 
 ## 完了済みの追加作業
