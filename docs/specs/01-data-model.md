@@ -85,6 +85,7 @@ CREATE TABLE conversation (
   title VARCHAR(200) NOT NULL,
   repository_id UUID REFERENCES repository(id) ON DELETE SET NULL,
   active_branch_id UUID,  -- FK は Branch 作成後に ALTER TABLE で追加
+  context_mode VARCHAR(10) NOT NULL DEFAULT 'summary',  -- full / summary / minimal
   deleted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
