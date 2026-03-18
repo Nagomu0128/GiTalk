@@ -41,6 +41,13 @@ app.use(
 // ============================================================
 app.get('/health', (c) => c.json({ status: 'ok' }));
 
+app.get('/health/db', async (c) => {
+  const { checkDbConnection } = await import('./db/client.js');
+  const result = await checkDbConnection();
+  const status = result.ok ? 200 : 503;
+  return c.json(result, status);
+});
+
 // ============================================================
 // Routes with own auth handling (must be before global authMiddleware)
 // ============================================================

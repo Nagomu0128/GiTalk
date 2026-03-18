@@ -62,3 +62,33 @@ export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
 });
 
 export type Database = ReturnType<typeof drizzle<typeof schema>>;
+
+export const checkDbConnection = async (): Promise<{
+  ok: boolean;
+  databaseUrlSet: boolean;
+  databaseUrlFormat: string;
+  error?: string;
+}> => {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    return { ok: false, databaseUrlSet: false, databaseUrlFormat: 'none', error: 'DATABASE_URL is not set' };
+  }
+
+  const isUnixSocket = /[?&]host=/.test(url);
+  const format = isUnixSocket ? 'unix_socket' : 'tcp';
+  const maskedUrl = url.replace(/:([^@]+)@/, ':***@');
+
+  try {
+    const queryClient = createQueryClient();
+    await queryClient`SELECT 1 AS ping`;
+    await queryClient.end();
+    return { ok: true, databaseUrlSet: true, databaseUrlFormat: format };
+  } catch (e) {
+    return {
+      ok: false,
+      databaseUrlSet: true,
+      databaseUrlFormat: format,
+      error: `${maskedUrl} → ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+};
