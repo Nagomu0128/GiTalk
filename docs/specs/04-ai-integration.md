@@ -32,27 +32,36 @@ Gemini API は Vertex AI 経由で使用し、GCP サービスアカウント認
 ### コンテキスト構築
 
 ```typescript
-// 擬似コード: ノードからルートまでのパスを構築
-async function buildContext(nodeId: string, mode: ContextMode): Promise<Content[]> {
-  // 1. ノードからルートまでのパスを取得
-  const path: Node[] = [];
-  let current = await getNode(nodeId);
-  while (current !== null) {
-    if (current.node_type !== 'system') {  // system ノードはスキップ
-      path.unshift(current);
-    }
-    current = current.parent_id ? await getNode(current.parent_id) : null;
-  }
+// domain/context-builder.ts — neverthrow スタイル
+import { ResultAsync } from "neverthrow";
 
-  // 2. コンテキストモードに応じて加工
-  const processedPath = applyContextMode(path, mode);
+const buildContext = (
+  nodeId: string,
+  mode: ContextMode,
+  getNode: (id: string) => ResultAsync<Node | null, DBError>,
+): ResultAsync<Content[], DBError> =>
+  getPathToRoot(nodeId, getNode)
+    .map((path) => path.filter((node) => node.node_type !== "system"))
+    .map((path) => applyContextMode(path, mode))
+    .map((processedPath) =>
+      processedPath.flatMap((node) => [
+        { role: "user" as const, parts: [{ text: node.user_message }] },
+        { role: "model" as const, parts: [{ text: node.ai_response }] },
+      ])
+    );
 
-  // 3. Gemini API の contents 形式に変換
-  return processedPath.flatMap(node => [
-    { role: "user" as const, parts: [{ text: node.user_message }] },
-    { role: "model" as const, parts: [{ text: node.ai_response }] },
-  ]);
-}
+// parent_id を辿ってルートまでのパスを取得
+const getPathToRoot = (
+  nodeId: string,
+  getNode: (id: string) => ResultAsync<Node | null, DBError>,
+): ResultAsync<Node[], DBError> =>
+  getNode(nodeId).andThen((node) =>
+    node === null
+      ? ok([])
+      : node.parent_id === null
+        ? ok([node])
+        : getPathToRoot(node.parent_id, getNode).map((path) => [node, ...path])
+  ).map((path) => path.reverse()); // ルート → リーフの順に並べ替え
 ```
 
 ### API リクエスト形式

@@ -121,40 +121,65 @@ export const users = pgTable('user', {
 
 ## プロジェクト構成（バックエンド）
 
+> このディレクトリ構成は `.claude/skills/coding-rules/SKILL.md` と完全に一致する。
+
 ```
 backend/src/
-├── index.ts                 # Hono アプリのエントリーポイント
-├── db/
-│   ├── schema.ts            # Drizzle スキーマ定義
-│   ├── client.ts            # DB 接続設定
-│   └── migrations/          # マイグレーションファイル
-├── routes/
-│   ├── conversations.ts     # /conversations エンドポイント
-│   ├── branches.ts          # /conversations/:id/branches エンドポイント
-│   ├── nodes.ts             # /conversations/:id/nodes エンドポイント
-│   ├── chat.ts              # /conversations/:id/chat エンドポイント
-│   ├── git-operations.ts    # /conversations/:id/merge, reset, diff, cherry-pick
-│   └── repositories.ts     # /repositories エンドポイント
-├── services/
+├── index.ts                          # Hono アプリのエントリーポイント
+├── middleware/                       # Hono ミドルウェア
+│   ├── auth.ts                      # Firebase 認証、getAuthUser(c)
+│   └── error-handler.ts            # Result → HTTP レスポンス変換
+├── routes/                          # API ルート + ハンドラ
+│   ├── conversations.route.ts      # OpenAPI スキーマ定義（Zod）
+│   ├── conversations.ts            # /v1/conversations ハンドラ
+│   ├── branches.route.ts
+│   ├── branches.ts                 # /v1/conversations/:id/branches ハンドラ
+│   ├── nodes.route.ts
+│   ├── nodes.ts                    # /v1/conversations/:id/nodes ハンドラ
+│   ├── chat.route.ts
+│   ├── chat.ts                     # /v1/conversations/:id/chat ハンドラ（SSE）
+│   ├── git-operations.route.ts
+│   ├── git-operations.ts           # /v1/conversations/:id/merge, reset, diff
+│   ├── repositories.route.ts
+│   └── repositories.ts            # /v1/repositories ハンドラ
+├── service/                         # アプリケーションサービス層
 │   ├── conversation.service.ts
 │   ├── branch.service.ts
 │   ├── node.service.ts
 │   ├── chat.service.ts
 │   ├── git-operations.service.ts
 │   └── repository.service.ts
-├── domain/
-│   ├── context-builder.ts   # コンテキスト構築ロジック
-│   ├── lca.ts               # LCA アルゴリズム
-│   └── tree.ts              # ツリー操作ユーティリティ
-├── infra/
-│   ├── gemini.ts            # Vertex AI / Gemini API クライアント
-│   └── firebase-auth.ts     # Firebase Admin SDK 認証
-├── middleware/
-│   ├── auth.ts              # 認証ミドルウェア
-│   ├── error-handler.ts     # エラーハンドリング
-│   └── validator.ts         # Zod バリデーション
-└── types/
-    └── index.ts             # 共通型定義
+├── domain/                          # ドメイン層（ビジネスロジック）
+│   ├── context-builder.ts          # コンテキスト構築ロジック
+│   ├── lca.ts                      # LCA（最近共通祖先）アルゴリズム
+│   └── tree.ts                     # ツリー操作ユーティリティ
+├── infra/                           # インフラ層（外部サービス連携）
+│   ├── gemini.ts                   # Vertex AI / Gemini API クライアント
+│   └── firebase-auth.ts           # Firebase Admin SDK
+├── db/                              # データベース
+│   ├── schema.ts                   # Drizzle ORM スキーマ定義
+│   ├── client.ts                   # DB 接続設定
+│   └── migrations/                 # マイグレーションファイル
+├── shared/                          # 共有ユーティリティ
+│   ├── error.ts                    # errorBuilder（neverthrow 用）
+│   ├── logger.ts                   # appLogger
+│   └── types.ts                    # 共通型定義
+└── test/
+    └── unit/                       # ユニットテスト
+```
+
+### レイヤー間の依存関係
+
+```
+routes/ → service/ → domain/
+                  → infra/
+
+middleware/ → shared/
+routes/    → shared/
+service/   → shared/
+infra/     → shared/
+
+domain/ は他のレイヤーに依存しない
 ```
 
 ## プロジェクト構成（フロントエンド）
