@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { onIdTokenChanged } from 'firebase/auth';
 import { useRouter, usePathname } from 'next/navigation';
-import { auth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { useAuthStore } from '@/stores/auth-store';
 
 const PUBLIC_PATHS = ['/', '/login'];
@@ -16,7 +16,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    const unsubscribe = onIdTokenChanged(auth, (firebaseUser) => {
+    const unsubscribe = onIdTokenChanged(getFirebaseAuth(), (firebaseUser) => {
       setUser(firebaseUser);
     });
     return unsubscribe;

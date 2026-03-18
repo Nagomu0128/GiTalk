@@ -2,7 +2,7 @@
 
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -11,7 +11,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      await signInWithPopup(getFirebaseAuth(), googleProvider);
       router.push('/dashboard');
     } catch (error) {
       console.error('Login failed:', error);

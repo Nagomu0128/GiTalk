@@ -1,14 +1,14 @@
 'use client';
 
 import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
 
   const handleLogout = async () => {
-    await signOut(auth);
+    await signOut(getFirebaseAuth());
   };
 
   return (
