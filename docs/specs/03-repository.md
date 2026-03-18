@@ -31,9 +31,10 @@ Conversation（ローカル）  ──push──>  Repository（リモート）
 
 - **全ブランチpush:** 会話内の全ブランチとノードをリポジトリに保存
 - **選択的push:** 特定のブランチのみを選択してpush
-  - 選択したブランチのルートからheadまでのノードがpushされる
-- push はスナップショットとして記録され、push 後にローカルで会話を続けても Repository には影響しない
-- 同じリポジトリに対して再push可能（履歴が更新される）
+  - 選択したブランチの head からルートまでのパス上の全ノードを `RepositoryNode` テーブルにコピー
+- **データ独立性:** Push 時にノードを物理コピーするため、元の Conversation を削除してもリポジトリのデータは保持される
+- push 後にローカルで会話を続けても Repository には影響しない
+- 同じリポジトリに対して再push可能（該当ブランチの RepositoryNode を全置換）
 
 **UI:**
 1. Conversation 画面から「リポジトリにpush」ボタン

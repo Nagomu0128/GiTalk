@@ -144,6 +144,11 @@ app.use('*', cors({
 
 超過時は `429 RATE_LIMITED` を返す。
 
+**実装方式:**
+- MVP ではインメモリ（`Map<userId, { count, resetAt }>`）で実装。Cloud Run は `max_instances = 2` のため単一インスタンス前提で十分
+- レート制限のインターフェースを抽象化（`shared/rate-limiter.ts`）し、将来 Redis（Upstash 等）に差し替え可能にする
+- 複数インスタンスが常時稼働する段階で Upstash Redis に移行
+
 ### その他
 
 - HTTPS のみ（Cloud Run はデフォルトで HTTPS を強制）
