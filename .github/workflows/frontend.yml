@@ -76,3 +76,5 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm build
+        env:
+          BACKEND_URL: http://localhost:8080
