@@ -56,19 +56,29 @@ Hono.js で構築する REST API の設計。
 | PATCH | `/v1/conversations/:id` | 会話情報更新（タイトル等） | 必須 | Yes |
 | DELETE | `/v1/conversations/:id` | 会話削除 | 必須 | Yes |
 
-**POST /conversations レスポンス:**
-会話作成時にデフォルトブランチ "main"（`is_default: true`）を自動作成して返す。
+**POST /v1/conversations レスポンス:**
+会話作成時にデフォルトブランチ "main"（`is_default: true`）を自動作成し、`active_branch_id` にセットして返す。
 
 ```json
 {
   "id": "uuid",
   "title": "新しい会話",
+  "active_branch_id": "uuid",
   "branches": [
     { "id": "uuid", "name": "main", "is_default": true, "head_node_id": null }
   ],
   "created_at": "2026-03-18T00:00:00Z"
 }
 ```
+
+**DELETE /v1/conversations/:id:**
+Soft delete。`deleted_at = NOW()` を設定する。物理削除はしない。30日後にバッチジョブで物理削除。
+
+**GET /v1/conversations/deleted:**
+削除済み会話一覧を取得（復元用）。`deleted_at IS NOT NULL AND deleted_at > NOW() - INTERVAL '30 days'`。
+
+**POST /v1/conversations/:id/restore:**
+削除済み会話を復元（`deleted_at = NULL` に戻す）。
 
 ### ブランチ（Branch）
 
@@ -154,6 +164,18 @@ data: {"type":"done","node_id":"uuid","token_count":1234}
 エラー時:
 ```
 data: {"type":"error","code":"STREAM_INTERRUPTED","message":"ストリーミングが中断されました"}
+
+```
+
+DB保存失敗時:
+```
+data: {"type":"save_failed","message":"ノードの保存に失敗しました","user_message":"...","ai_response":"..."}
+
+```
+
+タイトル自動生成完了時（初回メッセージのみ、非同期で別途送信）:
+```
+data: {"type":"title_generated","title":"生成されたタイトル"}
 
 ```
 
@@ -267,6 +289,55 @@ GET /v1/conversations/:id/diff?branch_a=uuid&branch_b=uuid
 
 - `branch_ids` を省略または空配列の場合、**全ブランチをpush**
 - 同一 `repository_id` + `source_branch_id` の組み合わせが既に存在する場合は UPDATE（再push）
+
+### 検索
+
+| Method | Path | 説明 | 認証 | MVP |
+|--------|------|------|------|-----|
+| GET | `/v1/search` | 会話・ノードの全文検索 | 必須 | Yes |
+
+**クエリパラメータ:**
+- `q`: 検索キーワード（必須）
+- `scope`: `conversations`（タイトル検索）/ `nodes`（メッセージ内容検索）/ `all`（両方、デフォルト）
+- `cursor`, `limit`: ページネーション
+
+**レスポンス:**
+```json
+{
+  "conversations": [
+    { "id": "uuid", "title": "...", "matched_field": "title" }
+  ],
+  "nodes": [
+    {
+      "id": "uuid",
+      "conversation_id": "uuid",
+      "conversation_title": "...",
+      "branch_name": "...",
+      "user_message_excerpt": "...マッチした部分...",
+      "ai_response_excerpt": "...マッチした部分..."
+    }
+  ],
+  "has_more": false
+}
+```
+
+### DB保存リトライ
+
+| Method | Path | 説明 | 認証 | MVP |
+|--------|------|------|------|-----|
+| POST | `/v1/conversations/:id/retry-save` | ストリーミング成功後のDB保存失敗時のリトライ | 必須 | Yes |
+
+**リクエスト:**
+```json
+{
+  "branch_id": "uuid",
+  "parent_node_id": "uuid",
+  "user_message": "ユーザーのメッセージ",
+  "ai_response": "AIの応答全文",
+  "model": "gemini-1.5-flash",
+  "token_count": 1234
+}
+```
 
 ### 公開リポジトリ（MVP後）
 

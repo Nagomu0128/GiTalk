@@ -50,18 +50,39 @@ const buildContext = (
       ])
     );
 
-// parent_id を辿ってルートまでのパスを取得
+// parent_id を辿ってルートまでのパスを WITH RECURSIVE CTE で一括取得
+// N+1 クエリを回避し、1クエリでパス全体を取得する
 const getPathToRoot = (
   nodeId: string,
-  getNode: (id: string) => ResultAsync<Node | null, DBError>,
+  db: DrizzleClient,
 ): ResultAsync<Node[], DBError> =>
-  getNode(nodeId).andThen((node) =>
-    node === null
-      ? ok([])
-      : node.parent_id === null
-        ? ok([node])
-        : getPathToRoot(node.parent_id, getNode).map((path) => [node, ...path])
-  ).map((path) => path.reverse()); // ルート → リーフの順に並べ替え
+  ResultAsync.fromPromise(
+    db.execute(sql`
+      WITH RECURSIVE path AS (
+        SELECT * FROM node WHERE id = ${nodeId}
+        UNION ALL
+        SELECT n.* FROM node n
+        JOIN path p ON n.id = p.parent_id
+      )
+      SELECT * FROM path ORDER BY created_at ASC
+    `),
+    DBError.handle,
+  );
+
+// summary ノードのコンテキスト変換
+// user_message（システム的テキスト）は使わず、固定のuser文 + ai_response を使用
+const nodeToContents = (node: Node): Content[] =>
+  match(node.node_type)
+    .with("system", () => [])  // system ノードはスキップ
+    .with("summary", () => [
+      { role: "user" as const, parts: [{ text: `以下は別トピック「${node.metadata?.merge_source_branch_name ?? ""}」の要約です` }] },
+      { role: "model" as const, parts: [{ text: node.ai_response }] },
+    ])
+    .with("message", () => [
+      { role: "user" as const, parts: [{ text: node.user_message }] },
+      { role: "model" as const, parts: [{ text: node.ai_response }] },
+    ])
+    .exhaustive();
 ```
 
 ### API リクエスト形式

@@ -163,6 +163,7 @@ backend/src/
 ├── shared/                          # 共有ユーティリティ
 │   ├── error.ts                    # errorBuilder（neverthrow 用）
 │   ├── logger.ts                   # appLogger
+│   ├── rate-limiter.ts             # レート制限（MVP: インメモリ、将来: Upstash Redis）
 │   └── types.ts                    # 共通型定義
 └── test/
     └── unit/                       # ユニットテスト
@@ -181,6 +182,47 @@ infra/     → shared/
 
 domain/ は他のレイヤーに依存しない
 ```
+
+## 状態管理（フロントエンド）
+
+**Zustand** を使用する。
+
+選定理由:
+- React Flow が内部で Zustand を使用しており相性が良い
+- Provider ネストが不要（Context の課題を解決）
+- 必要な部分だけ subscribe でき再レンダリングが最小限
+- 軽量（1KB）
+
+```
+frontend/stores/
+├── conversation-store.ts  # 会話・ブランチ・ノード状態
+├── chat-store.ts          # チャットメッセージ・ストリーミング状態
+├── tree-store.ts          # React Flow ノード・エッジ・選択状態
+└── auth-store.ts          # 認証状態（AuthProvider の補助）
+```
+
+## タブ間同期
+
+**BroadcastChannel API** を使用して、同一ユーザーの複数タブ間でデータを同期する。
+
+```typescript
+// shared/broadcast.ts
+const channel = new BroadcastChannel("gitalk-sync");
+
+// ノード作成後に他タブに通知
+channel.postMessage({ type: "NODE_CREATED", conversationId, nodeId });
+
+// 他タブからの通知を受信してストアを更新
+channel.onmessage = (e) => {
+  match(e.data.type)
+    .with("NODE_CREATED", () => { /* ノードを再取得 */ })
+    .with("BRANCH_SWITCHED", () => { /* ブランチ状態を更新 */ })
+    .with("CONVERSATION_DELETED", () => { /* 一覧から削除 */ })
+    .exhaustive();
+};
+```
+
+追加のインフラコストはゼロ（ブラウザ API のみ）。
 
 ## プロジェクト構成（フロントエンド）
 
@@ -203,6 +245,12 @@ frontend/app/
 └── repository/
     └── [id]/
         └── page.tsx         # リポジトリ詳細
+
+frontend/stores/
+├── conversation-store.ts  # 会話・ブランチ・ノード状態
+├── chat-store.ts          # チャットメッセージ・ストリーミング状態
+├── tree-store.ts          # React Flow ノード・エッジ・選択状態
+└── auth-store.ts          # 認証状態
 
 frontend/components/
 ├── providers/
