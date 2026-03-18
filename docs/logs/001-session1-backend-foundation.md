@@ -44,10 +44,13 @@ src/
 ### eslint 設定変更
 - `no-redeclare` を無効化（SKILL.md の `export const FooError` + `export type FooError` パターンを許可）
 
+## スキップした項目
+- **esbuild ビルドスクリプト承認:** `pnpm approve-builds` は対話的操作が必要なため自動実行できず、ユーザーに手動実行を依頼。承認完了済み
+- **DB接続の動作確認:** ローカル PostgreSQL の起動が必要なため未実施。Session 2 以降で確認予定
+
 ## 確認結果
 - `tsc --noEmit`: パス
 - `pnpm lint`: パス
-- DB接続はローカル PostgreSQL が必要なため未確認（Session 2 以降で確認）
 
 ## 次のステップ
 Session 2: 認証基盤（T1-1 + T1-2）
