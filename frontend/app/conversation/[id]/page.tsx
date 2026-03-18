@@ -9,6 +9,7 @@ import { NodeContextMenu } from '@/components/branch/node-context-menu';
 import { MergeDialog } from '@/components/dialogs/merge-dialog';
 import { DiffView } from '@/components/dialogs/diff-view';
 import { CreateBranchDialog } from '@/components/dialogs/create-branch-dialog';
+import { PushDialog } from '@/components/dialogs/push-dialog';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useAuthStore } from '@/stores/auth-store';
@@ -41,6 +42,7 @@ export default function ConversationPage() {
   const [showDiffView, setShowDiffView] = useState(false);
   const [mergeLoading, setMergeLoading] = useState(false);
   const [branchBaseNodeId, setBranchBaseNodeId] = useState<string | null>(null);
+  const [showPushDialog, setShowPushDialog] = useState(false);
 
   const getHeaders = useCallback(async () => {
     const token = await user?.getIdToken();
@@ -195,13 +197,23 @@ export default function ConversationPage() {
           <button onClick={() => router.push('/dashboard')} className="text-gray-500 hover:text-gray-700">← 戻る</button>
           <h1 className="text-lg font-bold">{conversation.title}</h1>
         </div>
-        {nodes.length > 0 && (
-          <BranchSelector
-            onSwitch={handleSwitch}
-            onMerge={() => setShowMergeDialog(true)}
-            onDiff={() => setShowDiffView(true)}
-          />
-        )}
+        <div className="flex items-center gap-2">
+          {nodes.length > 0 && (
+            <>
+              <BranchSelector
+                onSwitch={handleSwitch}
+                onMerge={() => setShowMergeDialog(true)}
+                onDiff={() => setShowDiffView(true)}
+              />
+              <button
+                onClick={() => setShowPushDialog(true)}
+                className="rounded-lg border border-gray-300 px-3 py-1 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                📦 保存
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* メインコンテンツ */}
@@ -240,6 +252,11 @@ export default function ConversationPage() {
       {/* Diff View */}
       {showDiffView && (
         <DiffView conversationId={conversationId} onClose={() => setShowDiffView(false)} />
+      )}
+
+      {/* Push Dialog */}
+      {showPushDialog && (
+        <PushDialog conversationId={conversationId} onClose={() => setShowPushDialog(false)} />
       )}
 
       {/* Create Branch Dialog */}

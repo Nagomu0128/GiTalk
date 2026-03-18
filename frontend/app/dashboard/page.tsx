@@ -45,6 +45,17 @@ export default function DashboardPage() {
     router.push(`/conversation/${data.id}`);
   };
 
+  const handleDelete = async (conversationId: string) => {
+    const token = await user?.getIdToken();
+    const res = await fetch(`${API}/v1/conversations/${conversationId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      setConversations((prev) => prev.filter((c) => c.id !== conversationId));
+    }
+  };
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
@@ -65,7 +76,7 @@ export default function DashboardPage() {
         )}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {conversations.map((conv) => (
-            <ConversationCard key={conv.id} id={conv.id} title={conv.title} updatedAt={conv.updatedAt} />
+            <ConversationCard key={conv.id} id={conv.id} title={conv.title} updatedAt={conv.updatedAt} onDelete={handleDelete} />
           ))}
         </div>
       </section>
