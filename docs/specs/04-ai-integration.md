@@ -3,46 +3,69 @@
 ## 概要
 
 Gemini API を使用したAIチャット機能と、ツリー構造に基づくコンテキスト管理の設計。
+Gemini API は Vertex AI 経由で使用し、GCP サービスアカウント認証で接続する。
 
 ## Gemini API 連携
+
+### 使用モデル
+
+| モデルID | 用途 | 備考 |
+|---------|------|------|
+| `gemini-1.5-flash` | デフォルト。高速・低コスト | 開発段階ではこちらを優先 |
+| `gemini-1.5-pro` | 高品質な応答が必要な場合 | ユーザーが明示的に選択 |
+
+モデルID はそのまま Vertex AI SDK の `getGenerativeModel()` に渡す。
 
 ### 基本フロー
 
 ```
 1. ユーザーがメッセージを入力
-2. 現在のノードからルートまでのパスを取得
-3. パス上の全ノードの会話を Gemini API の入力に構築
-4. 新しいユーザーメッセージを末尾に追加
-5. Gemini API に送信
-6. レスポンスを受け取り、新ノードとして保存
+2. 現在のブランチの head_node_id からルートまでのパスを取得
+3. コンテキストモードに応じてパス上のノードを加工
+4. Gemini API の contents にマルチターン形式で構築
+5. generateContentStream で送信（ストリーミング）
+6. SSE でフロントエンドにチャンクを送信
+7. ストリーミング完了後、usage_metadata からトークン数を取得
+8. 新ノードを DB に保存し、ブランチの head_node_id を更新
 ```
 
 ### コンテキスト構築
 
 ```typescript
 // 擬似コード: ノードからルートまでのパスを構築
-async function buildContext(nodeId: string): Promise<Message[]> {
+async function buildContext(nodeId: string, mode: ContextMode): Promise<Content[]> {
+  // 1. ノードからルートまでのパスを取得
   const path: Node[] = [];
   let current = await getNode(nodeId);
-
   while (current !== null) {
-    path.unshift(current);
+    if (current.node_type !== 'system') {  // system ノードはスキップ
+      path.unshift(current);
+    }
     current = current.parent_id ? await getNode(current.parent_id) : null;
   }
 
-  return path.map(node => [
-    { role: "user", parts: [{ text: node.user_message }] },
-    { role: "model", parts: [{ text: node.ai_response }] },
-  ]).flat();
+  // 2. コンテキストモードに応じて加工
+  const processedPath = applyContextMode(path, mode);
+
+  // 3. Gemini API の contents 形式に変換
+  return processedPath.flatMap(node => [
+    { role: "user" as const, parts: [{ text: node.user_message }] },
+    { role: "model" as const, parts: [{ text: node.ai_response }] },
+  ]);
 }
 ```
 
 ### API リクエスト形式
 
-Gemini API の `generateContent` にマルチターン形式で送信:
+Vertex AI SDK を使用:
 
 ```typescript
-const result = await model.generateContent({
+import { VertexAI } from '@google-cloud/vertexai';
+
+const vertexAI = new VertexAI({ project: GCP_PROJECT_ID, location: 'asia-northeast1' });
+const model = vertexAI.getGenerativeModel({ model: selectedModel });
+
+const result = await model.generateContentStream({
   contents: [
     ...contextMessages,  // ルート→現在ノードまでの履歴
     { role: "user", parts: [{ text: newUserMessage }] }
@@ -50,86 +73,143 @@ const result = await model.generateContent({
 });
 ```
 
-## コンテキスト肥大化対策
+## コンテキストモード
 
-### 1. Gemini Context Caching
+ユーザーがメッセージ送信時に選択できる。デフォルトは `summary`。
 
-**概要:** 共通のプレフィックス（ルート→分岐点まで）をキャッシュし、API呼び出しコストを削減。
+### full（フルコンテキスト）
 
-**適用条件:**
-- コンテキストが 32,768 tokens 以上の場合に有効
-- 同一ブランチ内の連続した会話で特に効果的
-- キャッシュの TTL はデフォルト1時間
+- パス上の全ノード（`system` 以外）をそのまま送信
+- コンテキスト圧縮は一切適用しない
+- トークン数が多くなるためコストが高い
+- Gemini Context Caching のみ適用可能
 
-**実装方針:**
-```
-会話パス: [N1] → [N2] → [N3] → [N4] → [新メッセージ]
-                                  ↑
-           ここまでをキャッシュ ──┘
-```
+### summary（要約モード、デフォルト）
 
-- ノードの `token_count` を蓄積し、パスの合計トークン数を計算
-- 閾値を超えた場合にキャッシュを作成
-- キャッシュIDをブランチまたはノードに紐づけて再利用
-
-**コスト:**
-- キャッシュ保存: 通常入力の約1/4の料金
-- キャッシュヒット時: 入力トークンのコストが大幅に削減
-
-### 2. 要約圧縮
-
-**概要:** 古いノードの会話をAIで要約し、コンテキスト量を圧縮する。
-
-**トリガー条件:**
-- パスの合計トークン数が設定閾値を超えた場合
-- ユーザーが手動で要約を要求した場合
-
-**実装方針:**
-- パスの先頭N個のノードを要約して1つの要約テキストに圧縮
-- 要約はシステムメッセージとしてコンテキストの先頭に配置
-- 元のノードデータは削除せず保持（UIでの閲覧は可能）
+- パスの合計トークン数が **100,000 tokens** を超えた場合に自動圧縮
+- 圧縮対象: パスの先頭から、残りが **80,000 tokens** 以下になるまでのノード
+- 圧縮したノード群は以下のプロンプトで要約:
 
 ```
-元のコンテキスト: [N1, N2, N3, N4, N5, N6, N7, N8] (合計 50,000 tokens)
+以下はこれまでの会話の要約です。この要約を踏まえて、ユーザーの次の質問に答えてください。
+
+要約:
+{Gemini API で生成した要約テキスト}
+```
+
+- 要約はコンテキストの先頭にシステムメッセージとして配置
+- 元のノードデータは DB 上ではそのまま保持（UI での閲覧は可能）
+
+```
+元のコンテキスト: [N1, N2, N3, N4, N5, N6, N7, N8] (合計 120,000 tokens)
 
 圧縮後:
-[要約: N1-N5の内容を3,000 tokensに圧縮] + [N6, N7, N8] (合計 18,000 tokens)
+[要約: N1-N5 を 3,000 tokens に圧縮] + [N6, N7, N8] (合計 ~23,000 tokens)
 ```
 
-### 3. スライディングウィンドウ（ユーザー設定）
+### minimal（最小コンテキスト）
 
-**概要:** ユーザーがコンテキストの量を制御できる。
+- 直近 **10 ノード** のみを送信（設定変更不可、固定値）
+- それ以前のノードは完全に無視（要約もしない）
+- 最もコストが低いが、文脈が失われるリスクがある
 
-| モード | 説明 |
-|--------|------|
-| フル | パス上の全ノードをそのまま送信 |
-| 要約 | 古いノードを自動要約して圧縮 |
-| 最小 | 直近N個のノードのみ送信 |
+## Gemini Context Caching
 
-- デフォルトは「要約」モード
-- 会話画面のサイドバーで切替可能
+**適用条件:** コンテキストの合計トークン数が **32,768 tokens** 以上の場合に自動適用。コンテキストモードに関係なく適用される。
+
+**キャッシュ対象:** コンテキストの先頭から末尾の1つ前のノードまで（プレフィックス部分）。最新のノード + 新しいメッセージは毎回送信。
+
+**キャッシュ管理:**
+- キャッシュ ID はサーバーのメモリ上で保持（Map<branchId, cacheId>）
+- TTL: 1 時間（Gemini のデフォルト）
+- TTL 切れの場合は自動的に再作成
+- ブランチが切り替わった場合はキャッシュを再作成
+
+**コスト:**
+- キャッシュ保存: 通常入力の約 1/4 の料金
+- キャッシュヒット時: 入力トークンのコストが大幅に削減
 
 ## モデル選択
 
-- MVP では Gemini 1.5 Pro / Gemini 1.5 Flash を選択可能
-- モデル選択は会話単位またはメッセージ単位で切替可能
+- MVP では `gemini-1.5-flash`（デフォルト）と `gemini-1.5-pro` を選択可能
+- モデル選択はメッセージ単位で切替可能（メッセージ入力エリアのドロップダウン）
 - 使用モデルは `Node.model` に記録
+- merge の要約生成には送信時に選択中のモデルを使用
 
 ## ストリーミング対応
 
-- Gemini API の `generateContentStream` を使用
-- Server-Sent Events (SSE) でフロントエンドにストリーミング
-- ストリーミング完了後にノードとして保存
+### シーケンス
 
 ```
-Client ←─ SSE ─← Hono Backend ←─ Stream ─← Gemini API
+Client                    Hono Backend                  Gemini API (Vertex AI)
+  │                          │                               │
+  │  POST /chat              │                               │
+  │  (message, branch_id,    │                               │
+  │   model, context_mode)   │                               │
+  │ ─────────────────────►   │                               │
+  │                          │  buildContext()                │
+  │                          │  ──────────────►               │
+  │                          │  ◄──────────────               │
+  │                          │                               │
+  │                          │  generateContentStream()       │
+  │                          │  ─────────────────────────────►│
+  │                          │                               │
+  │  SSE: {type: "chunk",    │  ◄── stream chunk ────────── │
+  │        content: "..."}   │                               │
+  │ ◄────────────────────    │                               │
+  │                          │                               │
+  │  SSE: {type: "chunk",    │  ◄── stream chunk ────────── │
+  │        content: "..."}   │                               │
+  │ ◄────────────────────    │                               │
+  │                          │                               │
+  │                          │  ◄── stream end ──────────── │
+  │                          │                               │
+  │                          │  usage_metadata からトークン数取得
+  │                          │  Node を DB に INSERT          │
+  │                          │  Branch.head_node_id を UPDATE │
+  │                          │                               │
+  │  SSE: {type: "done",     │                               │
+  │        node_id: "...",   │                               │
+  │        token_count: N}   │                               │
+  │ ◄────────────────────    │                               │
 ```
+
+### SSE イベント形式
+
+```
+data: {"type": "chunk", "content": "AIの応答テキストの一部"}
+
+data: {"type": "chunk", "content": "続きのテキスト\n改行も含む"}
+
+data: {"type": "done", "node_id": "uuid-of-new-node", "token_count": 1234}
+
+data: {"type": "error", "code": "STREAM_INTERRUPTED", "message": "ストリーミングが中断されました"}
+```
+
+- `content` 内の改行・特殊文字は JSON エンコーディングで処理される
+- 各 `data:` 行は1つの JSON オブジェクト
+
+### ストリーミング中断時の挙動
+
+- Gemini API からのストリーミングが中断された場合（ネットワークエラー、タイムアウト等）:
+  1. `type: "error"` イベントをクライアントに送信
+  2. **ノードは DB に保存しない**（部分的な応答は永続化しない）
+  3. ブランチの `head_node_id` は変更しない
+  4. フロントエンドはエラーメッセージを表示し、再送信ボタンを表示
+
+## トークンカウント
+
+- `Node.token_count` には `user_message` + `ai_response` の合計トークン数を保存
+- Gemini API の `generateContentStream` 完了時の `usage_metadata.totalTokenCount` から取得
+- merge の要約ノードでは、要約後のテキストに対するトークン数を保存
 
 ## エラーハンドリング
 
-| エラー | 対処 |
-|--------|------|
-| Rate Limit | リトライ（exponential backoff） |
-| Token Limit超過 | 自動要約を提案し、ユーザー確認後に実行 |
-| API障害 | エラーメッセージ表示、ノード作成はしない |
-| タイムアウト | リトライ or ユーザーに再送信を促す |
+| エラー | HTTP Status | エラーコード | 対処 |
+|--------|------------|-------------|------|
+| Rate Limit | 429 | `RATE_LIMITED` | リトライ（exponential backoff、最大3回） |
+| Token Limit超過 | 400 | `TOKEN_LIMIT_EXCEEDED` | コンテキストモードを `summary` または `minimal` に変更するよう促す |
+| API障害 | 502 | `AI_SERVICE_UNAVAILABLE` | エラーメッセージ表示、ノード作成はしない |
+| タイムアウト | 504 | `AI_TIMEOUT` | ユーザーに再送信を促す |
+| ストリーミング中断 | - | `STREAM_INTERRUPTED` | SSE error イベント送信、ノード保存しない |
+| 不正なモデル指定 | 400 | `INVALID_MODEL` | エラーメッセージ表示 |
