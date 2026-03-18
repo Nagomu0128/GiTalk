@@ -5,19 +5,34 @@ import { appLogger } from '../shared/logger.js';
 
 const logger = appLogger('db');
 
-const DATABASE_URL = process.env.DATABASE_URL;
+const getDatabaseUrl = (): string => {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    logger.error('DATABASE_URL environment variable is not set');
+    throw new Error('DATABASE_URL environment variable is not set');
+  }
+  return url;
+};
 
-if (!DATABASE_URL) {
-  logger.error('DATABASE_URL environment variable is not set');
-  process.exit(1);
-}
+let _db: ReturnType<typeof drizzle<typeof schema>> | undefined;
 
-const queryClient = postgres(DATABASE_URL, {
-  max: 10,
-  idle_timeout: 20,
-  connect_timeout: 10,
+export const getDb = (): ReturnType<typeof drizzle<typeof schema>> => {
+  if (!_db) {
+    const queryClient = postgres(getDatabaseUrl(), {
+      max: 10,
+      idle_timeout: 20,
+      connect_timeout: 10,
+    });
+    _db = drizzle(queryClient, { schema });
+  }
+  return _db;
+};
+
+export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
+  get: (_, prop) => {
+    const instance = getDb();
+    return (instance as unknown as Record<string | symbol, unknown>)[prop];
+  },
 });
 
-export const db = drizzle(queryClient, { schema });
-
-export type Database = typeof db;
+export type Database = ReturnType<typeof drizzle<typeof schema>>;
