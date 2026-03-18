@@ -14,7 +14,7 @@ import { useConversationStore } from '@/stores/conversation-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useAuthStore } from '@/stores/auth-store';
 
-const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+const API = '/api';
 
 export default function ConversationPage() {
   const params = useParams();

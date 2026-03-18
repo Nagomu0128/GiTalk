@@ -4,7 +4,7 @@ runConfig:
   cpu: 1
 
 env:
-  - variable: NEXT_PUBLIC_BACKEND_URL
+  - variable: BACKEND_URL
     value: https://gitalk-backend-jyhcnrjueq-an.a.run.app
     availability:
       - BUILD
