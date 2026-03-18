@@ -14,14 +14,6 @@
 - Each time you make implementation progress, create a work log file under `docs/logs/` to record errors and progress in detail.
 - Name files with a sequential number and a brief task summary (e.g., `docs/logs/001-change-document`).
 
-## Git Identity
-
-- Before committing or pushing, ensure the following git config is set so that all git operations use the correct account:
-  ```bash
-  git config user.name "GitHubユーザー名"
-  git config user.email "GitHub登録メールアドレス"
-  ```
-
 ## Branch Strategy
 
 - **Never develop directly on the main branch.**
