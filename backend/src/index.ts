@@ -28,6 +28,7 @@ app.use(
   cors({
     origin: [
       'http://localhost:3000',
+      'https://gitalk-frontend--gitalk-01100128.asia-east1.hosted.app',
       ...(process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : []),
     ],
     allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
