@@ -8,6 +8,7 @@ import { BranchSelector } from '@/components/branch/branch-selector';
 import { NodeContextMenu } from '@/components/branch/node-context-menu';
 import { MergeDialog } from '@/components/dialogs/merge-dialog';
 import { DiffView } from '@/components/dialogs/diff-view';
+import { CreateBranchDialog } from '@/components/dialogs/create-branch-dialog';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useAuthStore } from '@/stores/auth-store';
@@ -39,6 +40,7 @@ export default function ConversationPage() {
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showDiffView, setShowDiffView] = useState(false);
   const [mergeLoading, setMergeLoading] = useState(false);
+  const [branchBaseNodeId, setBranchBaseNodeId] = useState<string | null>(null);
 
   const getHeaders = useCallback(async () => {
     const token = await user?.getIdToken();
@@ -124,23 +126,28 @@ export default function ConversationPage() {
     if (res.ok) { setActiveBranchId(branchId); }
   }, [conversationId, getHeaders, setActiveBranchId]);
 
-  // Branch creation
-  const handleBranch = useCallback(async (nodeId: string) => {
-    const name = prompt('ブランチ名を入力してください（英数字・ハイフン・アンダースコア）');
-    if (!name) return;
+  // Branch creation - open dialog
+  const handleBranchRequest = useCallback((nodeId: string) => {
+    setBranchBaseNodeId(nodeId);
+  }, []);
+
+  // Branch creation - submit
+  const handleBranchSubmit = useCallback(async (name: string) => {
+    if (!branchBaseNodeId) return;
     const headers = await getHeaders();
     const res = await fetch(`${API}/v1/conversations/${conversationId}/branches`, {
-      method: 'POST', headers, body: JSON.stringify({ name, base_node_id: nodeId }),
+      method: 'POST', headers, body: JSON.stringify({ name, base_node_id: branchBaseNodeId }),
     });
     if (res.ok) {
       const branch = await res.json();
+      setBranchBaseNodeId(null);
       await refetchAll();
       await handleSwitch(branch.id);
     } else {
       const err = await res.json();
       alert(err.error?.message ?? 'ブランチ作成に失敗しました');
     }
-  }, [conversationId, getHeaders, refetchAll, handleSwitch]);
+  }, [branchBaseNodeId, conversationId, getHeaders, refetchAll, handleSwitch]);
 
   // Reset
   const handleReset = useCallback(async (nodeId: string) => {
@@ -215,7 +222,7 @@ export default function ConversationPage() {
           x={contextMenu.x}
           y={contextMenu.y}
           nodeId={contextMenu.nodeId}
-          onBranch={handleBranch}
+          onBranch={handleBranchRequest}
           onReset={handleReset}
           onClose={() => setContextMenu(null)}
         />
@@ -233,6 +240,14 @@ export default function ConversationPage() {
       {/* Diff View */}
       {showDiffView && (
         <DiffView conversationId={conversationId} onClose={() => setShowDiffView(false)} />
+      )}
+
+      {/* Create Branch Dialog */}
+      {branchBaseNodeId && (
+        <CreateBranchDialog
+          onSubmit={handleBranchSubmit}
+          onClose={() => setBranchBaseNodeId(null)}
+        />
       )}
     </div>
   );

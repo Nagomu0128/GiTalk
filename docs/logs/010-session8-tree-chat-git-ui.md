@@ -33,6 +33,10 @@
 **merge:** ⋯メニュー →「会話を統合」→ MergeDialog → POST /merge → refetch
 **diff:** ⋯メニュー →「ブランチを比較」→ DiffView（全画面）→ GET /diff → 左右分割表示
 
+### E2E テスト中に発見・修正した問題
+1. **ブランチ作成で `prompt()` を使用していた:** ブラウザの `prompt()` は UX が悪く、日本語入力で Zod バリデーション（`^[a-zA-Z0-9_-]+$`）に引っかかり 400 エラー。→ `CreateBranchDialog` コンポーネントに置き換え。入力バリデーション + エラーメッセージ表示付き
+2. **⋯メニューが表示されない:** CSS の `hidden` + `group-hover:block` が動作しない。→ `useState` + クリックで開閉する方式に修正。外側クリックで閉じる `useRef` + `mousedown` リスナー付き
+
 ## スキップした項目
 - **CommandPalette (Ctrl+K):** specs で定義されているが、MVP の優先度として低い。他のGit操作UIが揃っているため後回し
 - **BroadcastChannel API:** タブ間同期は specs 12-development-guide.md で定義。現時点ではシングルタブでの動作に集中し、後続で追加
@@ -41,6 +45,14 @@
 ## 確認結果
 - `tsc --noEmit`: パス
 - `pnpm lint`: パス（warning 1件: unused eslint-disable）
+- **E2E テスト: 全操作パス**
+  1. メッセージ2回送信 → ツリーにノード2つ ✅
+  2. ノード右クリック →「新しい分岐を作成」→ ダイアログでブランチ名入力 → 作成 + 自動切替 ✅
+  3. 新ブランチでメッセージ送信 → ツリーに分岐表示 ✅
+  4. ブランチ切替（ドロップダウン）→ チャット切替 ✅
+  5. ⋯メニュー →「ブランチを比較」→ diff 全画面表示 ✅
+  6. ⋯メニュー →「会話を統合」→ merge ダイアログ → AI 要約 → summary ノード追加 ✅
+  7. ノード右クリック →「ここまで戻す」→ head 戻る ✅
 
 ## 次のステップ
 Session 9: 画面 UI（T6-1 + T6-2 + T6-3 + T6-4 + T6-5）
