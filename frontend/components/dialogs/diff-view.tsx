@@ -5,7 +5,7 @@ import { useConversationStore, type ConversationNode } from '@/stores/conversati
 import { useAuthStore } from '@/stores/auth-store';
 import { MessageBubble } from '../chat/message-bubble';
 
-const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+const API = '/api';
 
 type DiffData = {
   readonly lca_node_id: string | null;

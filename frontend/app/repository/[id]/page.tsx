@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { MessageBubble } from '@/components/chat/message-bubble';
 
-const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+const API = '/api';
 
 type Repository = {
   readonly id: string;

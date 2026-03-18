@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { ConversationCard } from '@/components/cards/conversation-card';
 
-const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+const API = '/api';
 
 type ConversationSummary = {
   readonly id: string;

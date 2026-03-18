@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 
-const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+const API = '/api';
 
 type RepositorySummary = {
   readonly id: string;
