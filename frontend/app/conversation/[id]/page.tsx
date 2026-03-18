@@ -26,8 +26,9 @@ export default function ConversationPage() {
   const activeBranchId = useConversationStore((s) => s.activeBranchId);
 
   const setStreaming = useChatStore((s) => s.setStreaming);
+  const setPendingUserMessage = useChatStore((s) => s.setPendingUserMessage);
   const appendStreamingContent = useChatStore((s) => s.appendStreamingContent);
-  const clearStreamingContent = useChatStore((s) => s.clearStreamingContent);
+  const clearStreamingState = useChatStore((s) => s.clearStreamingState);
   const getHeaders = useCallback(async () => {
     const token = await user?.getIdToken();
     return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -72,7 +73,7 @@ export default function ConversationPage() {
       if (!activeBranchId) return;
 
       setStreaming(true);
-      clearStreamingContent();
+      setPendingUserMessage(message);
 
       const token = await user?.getIdToken();
 
@@ -123,10 +124,9 @@ export default function ConversationPage() {
         }
       }
 
-      setStreaming(false);
-      clearStreamingContent();
+      clearStreamingState();
     },
-    [activeBranchId, conversationId, user, getHeaders, setStreaming, clearStreamingContent, appendStreamingContent, setNodes, updateBranchHead, updateTitle],
+    [activeBranchId, conversationId, user, getHeaders, setStreaming, setPendingUserMessage, clearStreamingState, appendStreamingContent, setNodes, updateBranchHead, updateTitle],
   );
 
   if (!conversation) {
