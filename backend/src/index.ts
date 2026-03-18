@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { errorHandler } from './middleware/error-handler.js';
+import { requestLogger } from './middleware/request-logger.js';
 import { appLogger } from './shared/logger.js';
 
 const logger = appLogger('server');
@@ -12,6 +13,7 @@ const app = new Hono();
 // Global middleware
 // ============================================================
 app.use('*', errorHandler);
+app.use('*', requestLogger);
 
 app.use(
   '*',
