@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ReactFlow,
-  MiniMap,
   Controls,
   Background,
   type Node,
@@ -135,7 +134,6 @@ export function TreeView({ onNodeClick }: TreeViewProps) {
         maxZoom={2}
       >
         <Controls />
-        <MiniMap />
         <Background />
       </ReactFlow>
     </div>
