@@ -10,6 +10,7 @@ import { branchesRouter } from './routes/branches.js';
 import { nodesRouter } from './routes/nodes.js';
 import { chatRouter } from './routes/chat.js';
 import { gitOperationsRouter } from './routes/git-operations.js';
+import { repositoriesRouter } from './routes/repositories.js';
 import { appLogger } from './shared/logger.js';
 
 const logger = appLogger('server');
@@ -39,6 +40,11 @@ app.use(
 // Health check
 // ============================================================
 app.get('/health', (c) => c.json({ status: 'ok' }));
+
+// ============================================================
+// Routes with own auth handling (must be before global authMiddleware)
+// ============================================================
+app.route('/v1/repositories', repositoriesRouter);
 
 // ============================================================
 // Auth-protected routes
