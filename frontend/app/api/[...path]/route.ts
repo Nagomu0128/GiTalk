@@ -25,13 +25,26 @@ const handler = async (req: NextRequest) => {
       body,
     });
 
+    const contentType = response.headers.get('content-type') || 'application/json';
+
+    // SSE ストリーミングの場合はボディをそのままパススルー
+    if (contentType.includes('text/event-stream')) {
+      return new NextResponse(response.body, {
+        status: response.status,
+        headers: {
+          'content-type': 'text/event-stream',
+          'cache-control': 'no-cache',
+          'connection': 'keep-alive',
+        },
+      });
+    }
+
+    // 通常のレスポンスはテキストとして読み取り
     const responseBody = await response.text();
 
     return new NextResponse(responseBody, {
       status: response.status,
-      headers: {
-        'content-type': response.headers.get('content-type') || 'application/json',
-      },
+      headers: { 'content-type': contentType },
     });
   } catch (error) {
     console.error('[API Proxy Error]', {
