@@ -31,10 +31,12 @@
 - ダッシュボードは Session 9 で本実装するため、プレースホルダーのみ作成
 
 ## スキップした項目
-- **T0-2 Firebase Console 設定:** Firebase Console での Authentication 有効化と Google プロバイダ設定はユーザーが手動で実施済み（コード外の作業）
+- **T0-2 Firebase Console 設定:** Firebase Console での Authentication 有効化と Google プロバイダ設定はユーザーが実施済み
 - **Firebase ビルドスクリプト承認:** `@firebase/util`, `protobufjs` の pnpm approve-builds 未実施。動作に支障なし
 - **E2E 認証テスト:** Firebase プロジェクト + バックエンド起動が必要なため未実施
-- **環境変数の設定:** `.env.local` に NEXT_PUBLIC_FIREBASE_* の設定が必要。値はユーザーが Firebase Console から取得して設定
+
+## 完了済みの追加作業
+- **環境変数の設定:** Firebase MCP で SDK config を取得し、`.env.local` に NEXT_PUBLIC_FIREBASE_* を設定済み（.gitignore で除外されるためコミット対象外）
 
 ## 確認結果
 - `tsc --noEmit`: パス
