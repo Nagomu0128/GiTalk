@@ -36,6 +36,8 @@ steps:
       - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE_NAME}:${COMMIT_SHA}"
       - "--region"
       - "${_REGION}"
+      - "--add-cloudsql-instances"
+      - "${_CLOUDSQL_INSTANCE}"
 
 options:
   default_logs_bucket_behavior: REGIONAL_USER_OWNED_BUCKET
@@ -45,3 +47,4 @@ substitutions:
   _IMAGE_NAME: ""
   _CLOUD_RUN_SERVICE: ""
   _REGION: ""
+  _CLOUDSQL_INSTANCE: ""
