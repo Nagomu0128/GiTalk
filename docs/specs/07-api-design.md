@@ -17,8 +17,9 @@ Hono.js で構築する REST API の設計。
 一覧系エンドポイントはカーソルベースのページネーションを使用する。
 
 **クエリパラメータ:**
-- `cursor`: 前回レスポンスの `next_cursor` 値（初回は省略）
+- `cursor`: 前回レスポンスの `next_cursor` 値（初回は省略）。**cursor の指すアイテムは結果に含まず、その次から返す**（"start AFTER cursor"）
 - `limit`: 取得件数（デフォルト: 20、最大: 100）
+- `sort`: ソート順（エンドポイントごとに指定可能なフィールドが異なる。デフォルト: `updated_at desc`）
 
 **レスポンス形式:**
 ```json
@@ -183,6 +184,33 @@ data: {"type":"title_generated","title":"生成されたタイトル"}
 
 ```
 
+### ブランチ切替
+
+| Method | Path | 説明 | 認証 | MVP |
+|--------|------|------|------|-----|
+| POST | `/v1/conversations/:id/switch` | アクティブブランチを切り替え | 必須 | Yes |
+
+**リクエスト:**
+```json
+{
+  "branch_id": "uuid"
+}
+```
+
+**レスポンス:**
+```json
+{
+  "active_branch_id": "uuid",
+  "branch": {
+    "id": "uuid",
+    "name": "pricing-discussion",
+    "head_node_id": "uuid"
+  }
+}
+```
+
+> `Conversation.active_branch_id` を更新し、切替先ブランチの情報を返す。
+
 ### Git的操作
 
 | Method | Path | 説明 | 認証 | MVP |
@@ -202,6 +230,11 @@ data: {"type":"title_generated","title":"生成されたタイトル"}
 ```
 `summary_strategy` のデフォルト: `"detailed"`
 
+**Merge バリデーション:**
+- `source_branch_id` と `target_branch_id` は異なるブランチでなければならない（同一 → `400 BAD_REQUEST`）
+- source ブランチに base_node_id から head_node_id までのノードが1つ以上必要（空ブランチ → `400 BAD_REQUEST`）
+- Gemini API での要約生成が失敗した場合は `502 AI_SERVICE_UNAVAILABLE` を返す（summary ノードは作成しない、head は変更しない）
+
 **Merge レスポンス:**
 ```json
 {
@@ -212,6 +245,7 @@ data: {"type":"title_generated","title":"生成されたタイトル"}
     "ai_response": "要約テキスト...",
     "metadata": {
       "merge_source_branch_id": "uuid",
+      "merge_source_branch_name": "pricing-discussion",
       "merge_source_head_node_id": "uuid",
       "summary_strategy": "detailed"
     }
@@ -368,6 +402,8 @@ RepositoryNode をブランチごとにグループ化して返す。Conversatio
   "has_more": false
 }
 ```
+
+**検索結果のソート順:** 更新日時の降順（最新の会話・ノードが上位）。将来的に PostgreSQL の `ts_rank` による関連度スコアでのランキングを追加予定。
 
 ### DB保存リトライ
 
