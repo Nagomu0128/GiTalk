@@ -59,9 +59,10 @@ const isOrphanNode = (
 
 type TreeViewProps = {
   readonly onNodeClick?: (nodeId: string) => void;
+  readonly onNodeContextMenu?: (nodeId: string, event: React.MouseEvent) => void;
 };
 
-export function TreeView({ onNodeClick }: TreeViewProps) {
+export function TreeView({ onNodeClick, onNodeContextMenu }: TreeViewProps) {
   const nodes = useConversationStore((s) => s.nodes);
   const branches = useConversationStore((s) => s.branches);
   const activeBranchId = useConversationStore((s) => s.activeBranchId);
@@ -118,6 +119,14 @@ export function TreeView({ onNodeClick }: TreeViewProps) {
     [onNodeClick],
   );
 
+  const handleNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      event.preventDefault();
+      onNodeContextMenu?.(node.id, event);
+    },
+    [onNodeContextMenu],
+  );
+
   if (nodes.length === 0) return null;
 
   return (
@@ -127,6 +136,7 @@ export function TreeView({ onNodeClick }: TreeViewProps) {
         edges={flowEdges}
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
+        onNodeContextMenu={handleNodeContextMenu}
         nodesConnectable={false}
         nodesDraggable={false}
         fitView
