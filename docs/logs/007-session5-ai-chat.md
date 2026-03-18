@@ -45,7 +45,7 @@
 - **Vertex AI SDK の利用:** プロジェクトのアクセス問題で断念。`@google-cloud/vertexai` は依存に残存（将来の Cloud Run デプロイ時に再検討）
 - **Gemini Context Caching:** T8-3 で対応予定
 - **summary モードの自動要約 Gemini 呼出:** 未実装
-- **タイトル自動生成のフロントエンド受信確認:** 非同期処理のため SSE ストリーム終了後に別途送信される。テストでは確認できず（仕様上は失敗しても通知しない）
+- **タイトル自動生成:** `generateTitle` を await してストリーム内で完了を待つよう修正。E2E テストで `[title_generated]` SSE イベントの受信と DB 更新を確認済み
 
 ## 確認結果
 - `tsc --noEmit`: パス

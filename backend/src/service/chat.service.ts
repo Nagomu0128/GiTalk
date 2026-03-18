@@ -131,9 +131,9 @@ export const processChat = async (
 
     await callbacks.onDone(node.id, tokenCount);
 
-    // 初回メッセージの場合、タイトル自動生成（非同期）
+    // 初回メッセージの場合、タイトル自動生成（ストリーム内で完了を待つ）
     if (!parentNodeId) {
-      generateTitle(params.conversationId, params.message, aiResponse, params.model, params.userId, callbacks);
+      await generateTitle(params.conversationId, params.message, aiResponse, params.model, params.userId, callbacks);
     }
   } catch (error) {
     logger.error('Stream interrupted', { error });
@@ -141,14 +141,14 @@ export const processChat = async (
   }
 };
 
-const generateTitle = (
+const generateTitle = async (
   conversationId: string,
   userMessage: string,
   aiResponse: string,
   model: string,
   userId: string,
   callbacks: StreamCallbacks,
-): void => {
+): Promise<void> => {
   const titleContents: Content[] = [
     {
       role: 'user',
@@ -160,15 +160,15 @@ const generateTitle = (
     },
   ];
 
-  generateContent(titleContents, model)
+  await generateContent(titleContents, model)
     .andThen((title) => {
       const trimmed = title.trim().replace(/^["「]|["」]$/g, '');
       return updateConversation(conversationId, userId, { title: trimmed });
     })
     .match(
-      (updated) => {
+      async (updated) => {
         if (updated) {
-          callbacks.onTitleGenerated(updated.title);
+          await callbacks.onTitleGenerated(updated.title);
         }
       },
       (error) => {
