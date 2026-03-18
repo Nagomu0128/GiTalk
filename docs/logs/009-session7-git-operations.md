@@ -58,6 +58,21 @@
 ## 確認結果
 - `tsc --noEmit`: パス
 - `pnpm lint`: パス
+- **E2E テスト: 全操作パス**
+  1. 会話作成 + mainで2回チャット（node1, node2） ✅
+  2. node1からブランチ「topic-a」作成 ✅
+  3. topic-aにswitch ✅
+  4. topic-aでチャット（node3） ✅
+  5. diff: LCA=node1, main 1ノード, topic-a 1ノード ✅
+  6. merge: topic-a → main に要約統合、summary ノード作成 ✅
+  7. reset: main を node1 に戻す ✅
+  8. 最終確認: main head = node1 ✅
+
+### E2E テスト中に発見・修正したバグ
+- **WITH RECURSIVE CTE のカラム名マッピング:** `db.execute` は生SQLを実行するためDBのスネークケース（`user_message`）を返すが、`NodeRecord` はキャメルケース（`userMessage`）を期待。`mapRawToNodeRecord` マッピング関数を追加して解決
+
+### docs/specs との差分
+- なし（Session 7 の実装は specs 通り）
 
 ## 次のステップ
 Session 8: ツリー↔チャット連携 + Git操作 UI（T5-3 + T5-4）
