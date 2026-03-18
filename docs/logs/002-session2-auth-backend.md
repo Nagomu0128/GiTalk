@@ -33,6 +33,11 @@
 - `neverthrow` の `ResultAsync` でエラーハンドリング
 - `errorBuilder` パターンで `FirebaseAuthError`, `DBUserError` 定義
 
+### Session 1 補完: リクエストログミドルウェア
+- T0-3 の成果物「リクエストログ」が Session 1 で未実装だったため、本セッションで追加
+- `middleware/request-logger.ts`: method, path, status, duration を JSON 構造化ログで出力
+- `index.ts` にグローバルミドルウェアとして登録
+
 ## スキップした項目
 - **Firebase Admin SDK のビルドスクリプト承認:** `pnpm approve-builds` で `@firebase/util`, `protobufjs` の承認が必要。動作に支障はないためスキップ
 - **E2E 認証テスト:** Firebase プロジェクトへの接続 + ローカル PostgreSQL が必要なため未実施。Session 3（フロントエンド認証）完了後に E2E で確認予定
