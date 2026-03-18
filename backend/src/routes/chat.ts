@@ -13,7 +13,7 @@ const logger = appLogger('chatRoute');
 const chatSchema = z.object({
   branch_id: z.string().uuid(),
   message: z.string().min(1).max(50000),
-  model: z.string().default('gemini-1.5-flash'),
+  model: z.string().default('gemini-2.0-flash'),
   context_mode: z.enum(['full', 'summary', 'minimal']).default('summary'),
 });
 
@@ -59,19 +59,19 @@ chatRouter.post('/', async (c) => {
         userId: user.dbUser.id,
       },
       {
-        onChunk: (content) => {
-          stream.writeSSE({ data: JSON.stringify({ type: 'chunk', content }) });
+        onChunk: async (content) => {
+          await stream.writeSSE({ data: JSON.stringify({ type: 'chunk', content }) });
         },
-        onDone: (nodeId, tokenCount) => {
-          stream.writeSSE({
+        onDone: async (nodeId, tokenCount) => {
+          await stream.writeSSE({
             data: JSON.stringify({ type: 'done', node_id: nodeId, token_count: tokenCount }),
           });
         },
-        onError: (code, message) => {
-          stream.writeSSE({ data: JSON.stringify({ type: 'error', code, message }) });
+        onError: async (code, message) => {
+          await stream.writeSSE({ data: JSON.stringify({ type: 'error', code, message }) });
         },
-        onSaveFailed: (userMessage, aiResponse) => {
-          stream.writeSSE({
+        onSaveFailed: async (userMessage, aiResponse) => {
+          await stream.writeSSE({
             data: JSON.stringify({
               type: 'save_failed',
               message: 'ノードの保存に失敗しました',
@@ -80,8 +80,8 @@ chatRouter.post('/', async (c) => {
             }),
           });
         },
-        onTitleGenerated: (title) => {
-          stream.writeSSE({ data: JSON.stringify({ type: 'title_generated', title }) });
+        onTitleGenerated: async (title) => {
+          await stream.writeSSE({ data: JSON.stringify({ type: 'title_generated', title }) });
         },
       },
     );

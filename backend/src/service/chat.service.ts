@@ -1,4 +1,4 @@
-import type { Content } from '@google-cloud/vertexai';
+import type { Content } from '@google/generative-ai';
 import { getPathToRoot, createNode } from '../infra/node.js';
 import { findBranchById, updateBranchHead } from '../infra/branch.js';
 import { updateConversation } from '../infra/conversation.js';
@@ -24,11 +24,11 @@ type ChatParams = {
 };
 
 type StreamCallbacks = {
-  readonly onChunk: (content: string) => void;
-  readonly onDone: (nodeId: string, tokenCount: number) => void;
-  readonly onError: (code: string, message: string) => void;
-  readonly onSaveFailed: (userMessage: string, aiResponse: string) => void;
-  readonly onTitleGenerated: (title: string) => void;
+  readonly onChunk: (content: string) => Promise<void> | void;
+  readonly onDone: (nodeId: string, tokenCount: number) => Promise<void> | void;
+  readonly onError: (code: string, message: string) => Promise<void> | void;
+  readonly onSaveFailed: (userMessage: string, aiResponse: string) => Promise<void> | void;
+  readonly onTitleGenerated: (title: string) => Promise<void> | void;
 };
 
 export const processChat = async (
@@ -36,13 +36,13 @@ export const processChat = async (
   callbacks: StreamCallbacks,
 ): Promise<void> => {
   if (!isValidModel(params.model)) {
-    callbacks.onError('INVALID_MODEL', `Invalid model: ${params.model}`);
+    await callbacks.onError('INVALID_MODEL', `Invalid model: ${params.model}`);
     return;
   }
 
   const branchResult = await findBranchById(params.branchId, params.conversationId);
   if (branchResult.isErr() || !branchResult.value) {
-    callbacks.onError('NOT_FOUND', 'Branch not found');
+    await callbacks.onError('NOT_FOUND', 'Branch not found');
     return;
   }
 
@@ -71,7 +71,7 @@ export const processChat = async (
 
   if (streamResult.isErr()) {
     logger.error('Gemini stream failed', { error: streamResult.error.message });
-    callbacks.onError('AI_SERVICE_UNAVAILABLE', 'AI service is currently unavailable');
+    await callbacks.onError('AI_SERVICE_UNAVAILABLE', 'AI service is currently unavailable');
     return;
   }
 
@@ -85,7 +85,7 @@ export const processChat = async (
       const text = chunk.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
       if (text) {
         chunks.push(text);
-        callbacks.onChunk(text);
+        await callbacks.onChunk(text);
       }
     }
 
@@ -110,7 +110,7 @@ export const processChat = async (
 
     if (nodeResult.isErr()) {
       logger.error('Failed to save node', { error: nodeResult.error.message });
-      callbacks.onSaveFailed(params.message, aiResponse);
+      await callbacks.onSaveFailed(params.message, aiResponse);
       return;
     }
 
@@ -120,16 +120,16 @@ export const processChat = async (
     const headUpdateResult = await updateBranchHead(
       params.branchId,
       node.id,
-      parentNodeId ?? '',
+      parentNodeId,
     );
 
     if (headUpdateResult.isErr() || !headUpdateResult.value) {
       logger.error('Failed to update branch head (conflict?)');
-      callbacks.onSaveFailed(params.message, aiResponse);
+      await callbacks.onSaveFailed(params.message, aiResponse);
       return;
     }
 
-    callbacks.onDone(node.id, tokenCount);
+    await callbacks.onDone(node.id, tokenCount);
 
     // 初回メッセージの場合、タイトル自動生成（非同期）
     if (!parentNodeId) {
@@ -137,7 +137,7 @@ export const processChat = async (
     }
   } catch (error) {
     logger.error('Stream interrupted', { error });
-    callbacks.onError('STREAM_INTERRUPTED', 'Streaming was interrupted');
+    await callbacks.onError('STREAM_INTERRUPTED', 'Streaming was interrupted');
   }
 };
 

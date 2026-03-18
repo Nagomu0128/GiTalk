@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { ResultAsync } from 'neverthrow';
 import { db } from '../db/client.js';
 import { branches } from '../db/schema.js';
@@ -78,7 +78,7 @@ export const updateBranchHead = (
         and(
           eq(branches.id, branchId),
           expectedHeadNodeId === null
-            ? eq(branches.headNodeId, expectedHeadNodeId as unknown as string)
+            ? isNull(branches.headNodeId)
             : eq(branches.headNodeId, expectedHeadNodeId),
         ),
       )
