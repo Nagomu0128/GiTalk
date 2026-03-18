@@ -14,15 +14,41 @@ const getDatabaseUrl = (): string => {
   return url;
 };
 
-let _db: ReturnType<typeof drizzle<typeof schema>> | undefined;
+const createQueryClient = (): ReturnType<typeof postgres> => {
+  const url = getDatabaseUrl();
 
-export const getDb = (): ReturnType<typeof drizzle<typeof schema>> => {
-  if (!_db) {
-    const queryClient = postgres(getDatabaseUrl(), {
+  // Cloud SQL Unix socket format: postgresql://user:pass@/dbname?host=/cloudsql/...
+  const hostMatch = url.match(/[?&]host=([^&]+)/);
+  if (hostMatch) {
+    const socketPath = hostMatch[1];
+    const baseUrl = url.replace(/[?&]host=[^&]+/, '');
+    const parsed = new URL(baseUrl.replace(/^postgresql:/, 'http:'));
+
+    return postgres({
+      host: socketPath,
+      port: 5432,
+      database: parsed.pathname.slice(1) || 'gitalk',
+      username: parsed.username || 'app',
+      password: parsed.password || '',
       max: 10,
       idle_timeout: 20,
       connect_timeout: 10,
     });
+  }
+
+  // Standard TCP connection (local dev)
+  return postgres(url, {
+    max: 10,
+    idle_timeout: 20,
+    connect_timeout: 10,
+  });
+};
+
+let _db: ReturnType<typeof drizzle<typeof schema>> | undefined;
+
+export const getDb = (): ReturnType<typeof drizzle<typeof schema>> => {
+  if (!_db) {
+    const queryClient = createQueryClient();
     _db = drizzle(queryClient, { schema });
   }
   return _db;
