@@ -6,3 +6,21 @@ runConfig:
 env:
   - variable: BACKEND_URL
     value: https://gitalk-backend-jyhcnrjueq-an.a.run.app
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyAW4IX7q0pcK7w8y3WRAfEpekwRn79pjdI
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: gitalk-01100128.firebaseapp.com
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: gitalk-01100128
+    availability:
+      - BUILD
+      - RUNTIME
