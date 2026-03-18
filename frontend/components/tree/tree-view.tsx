@@ -128,6 +128,8 @@ export function TreeView({ onNodeClick }: TreeViewProps) {
         edges={flowEdges}
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
+        nodesConnectable={false}
+        nodesDraggable={false}
         fitView
         minZoom={0.1}
         maxZoom={2}
