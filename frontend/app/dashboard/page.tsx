@@ -35,14 +35,25 @@ export default function DashboardPage() {
   }, [user]);
 
   const handleNewConversation = async () => {
-    const token = await user?.getIdToken();
-    const res = await fetch(`${API}/v1/conversations`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: '新しい会話' }),
-    });
-    const data = await res.json();
-    router.push(`/conversation/${data.id}`);
+    try {
+      const token = await user?.getIdToken();
+      if (!token) { console.error('Failed to get token'); return; }
+      const res = await fetch(`${API}/v1/conversations`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: '新しい会話' }),
+      });
+      if (!res.ok) {
+        const errBody = await res.text();
+        console.error('Create conversation failed:', res.status, errBody);
+        return;
+      }
+      const data = await res.json();
+      if (!data.id) { console.error('No id in response:', data); return; }
+      router.push(`/conversation/${data.id}`);
+    } catch (error) {
+      console.error('handleNewConversation error:', error);
+    }
   };
 
   const handleDelete = async (conversationId: string) => {

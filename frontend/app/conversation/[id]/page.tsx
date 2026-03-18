@@ -70,7 +70,12 @@ export default function ConversationPage() {
         fetch(`${API}/v1/conversations/${conversationId}/branches`, { headers }),
         fetch(`${API}/v1/conversations/${conversationId}/nodes`, { headers }),
       ]);
-      if (!convRes.ok) { router.push('/dashboard'); return; }
+      if (!convRes.ok) {
+        const errBody = await convRes.text();
+        console.error('Failed to load conversation:', convRes.status, errBody);
+        router.push('/dashboard');
+        return;
+      }
       const convData = await convRes.json();
       const branchesData = await branchesRes.json();
       const nodesData = await nodesRes.json();
