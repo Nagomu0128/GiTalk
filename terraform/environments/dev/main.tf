@@ -31,6 +31,7 @@ resource "google_project_service" "apis" {
     "secretmanager.googleapis.com",
     "sqladmin.googleapis.com",
     "storage.googleapis.com",
+    "aiplatform.googleapis.com",
   ])
   service            = each.value
   disable_on_destroy = false
@@ -42,6 +43,15 @@ resource "google_project_service" "apis" {
 resource "google_service_account" "backend" {
   account_id   = "${var.app_name}-backend"
   display_name = "Cloud Run Backend Service Account"
+}
+
+# ============================================================
+# IAM: Vertex AI access for Cloud Run
+# ============================================================
+resource "google_project_iam_member" "backend_vertex_ai" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${google_service_account.backend.email}"
 }
 
 # ============================================================
@@ -131,6 +141,9 @@ module "cloud_run_backend" {
   env_vars = [
     { name = "NODE_ENV", value = "production" },
     { name = "GCS_BUCKET", value = module.cloud_storage.bucket_name },
+    { name = "FIREBASE_PROJECT_ID", value = var.firebase_project_id },
+    { name = "GCP_PROJECT_ID", value = var.project_id },
+    { name = "GEMINI_MODEL", value = "gemini-1.5-flash" },
   ]
 
   secret_env_vars = [

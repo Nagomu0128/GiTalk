@@ -23,6 +23,12 @@ variable "github_repo" {
   description = "GitHub repository name"
 }
 
+variable "firebase_project_id" {
+  type        = string
+  description = "Firebase project ID"
+  default     = "gitalk-01100128"
+}
+
 variable "db_password" {
   type      = string
   sensitive = true
