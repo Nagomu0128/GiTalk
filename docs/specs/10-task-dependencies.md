@@ -152,7 +152,7 @@ T0-1 → T1-1 → T2-1 → T2-3 → T2-4 → T3-1 → T3-2 → T3-3/T3-4 → T5-
 | ID | タスク | 内容 | 成果物 |
 |----|--------|------|--------|
 | T1-1 | User テーブル + CRUD | User スキーマ定義、作成/取得 API | `POST /users`, `GET /users/me` |
-| T1-2 | 認証ミドルウェア | Firebase ID トークン検証、User 自動作成（初回ログイン） | authMiddleware |
+| T1-2 | 認証ミドルウェア | Firebase ID トークン検証、User 自動作成（初回ログイン） | `middleware/auth.ts` + `getAuthUser(c)` |
 | T1-3 | フロントエンド認証 | Firebase Auth SDK 導入、ログイン画面、AuthContext | ログイン/サインアップ画面 |
 
 ### Phase 2: 会話コア

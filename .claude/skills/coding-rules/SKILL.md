@@ -1,6 +1,6 @@
 ---
 name: coding-rules
-description: Coding conventions and rules for this project. Enforces functional programming style, neverthrow error handling, ts-pattern matching, three-layered DDD architecture, and RESTful API design. Always follow when writing code.
+description: Coding conventions and rules for this project. Enforces functional programming style, neverthrow error handling, ts-pattern matching, layered architecture with Hono.js best practices, and RESTful API design. Always follow when writing code.
 user-invocable: false
 disable-model-invocation: false
 allowed-tools: Read, Grep, Glob
@@ -53,12 +53,12 @@ export const InvalidUserError = errorBuilder<
 export type InvalidUserError = InferError<typeof InvalidUserError>;
 ```
 
-* Use appLogger in `backend/src/logger.ts` for logging. Usage:
+* Use appLogger in `backend/src/shared/logger.ts` for logging. Usage:
 ```typescript
-import { appLogger } from "../logger";
+import { appLogger } from "../shared/logger";
 
 const logger = appLogger("fetchDBUserByUid");
-logger.debig('foo');
+logger.debug('foo');
 logger.info('foo');
 logger.warn('foo');
 logger.error('foo');
@@ -72,34 +72,83 @@ ResultAsync(promise, FooError.handle)
 ```
 
 # Backend Directory Structure
-* Architecture follows three-layered DDD (Domain-Driven Design) to maintain a clean architecture.
+* Architecture follows a layered design aligned with Hono.js best practices.
 * Be careful to avoid anemic domain models — domain objects should contain business logic, not just data.
 * The domain layer must not depend on external layers (infra, routes, etc.).
-* Do not leak DB schemas or DB-specific types into the presentation layer (routes/controller).
+* Do not leak DB schemas or DB-specific types into the route handlers.
 * The service layer must not be a mere wrapper around the infra layer — it should orchestrate domain logic and express use cases.
 ```
 /
 ├─ src
-│  ├─ controller // Receive ResultAsync from service, and handle errors using ts-pattern and logging
-│  ├─ db         // Database settings and schema
-│  ├─ domain     // Domain layer (and Domain service layer)
-│  ├─ infra      // Infrastructure layer (e.g., database, external services)
-│  ├─ routes     // API routes (Hono.js)
-│  │  ├─ users.route.ts // OpenAPI spec definition for /v1/users
-│  │  └─ users.ts       // Hono.js handler for /v1/users
-│  ├─ service    // Application services layer
-│  ├─ shared     // Shared utilities and constants
-│  └─ main.ts    // entrypoint
+│  ├─ middleware  // Hono middleware (auth, error handling, etc.)
+│  │  ├─ auth.ts           // Firebase token verification, getAuthUser(c)
+│  │  └─ error-handler.ts  // Global error handler (Result → HTTP response with ts-pattern)
+│  ├─ routes     // API routes + handlers (Hono.js)
+│  │  ├─ conversations.route.ts // OpenAPI spec definition for /v1/conversations
+│  │  ├─ conversations.ts       // Hono.js route handler for /v1/conversations
+│  │  └─ ...
+│  ├─ service    // Application services layer (use cases, orchestration)
+│  ├─ domain     // Domain layer (domain models, domain services, business logic)
+│  ├─ infra      // Infrastructure layer (database queries, external API clients)
+│  ├─ db         // Database settings, Drizzle schema, migrations
+│  ├─ shared     // Shared utilities (errorBuilder, logger, types, constants)
+│  └─ index.ts   // Entrypoint
 └─ test
    └─ unit       // Unit tests
 ```
 
+## Layer responsibilities
+
+### middleware/
+* Hono の `app.use()` で適用するミドルウェア
+* 認証: Firebase ID トークン検証。`getAuthUser(c)` でルートハンドラから認証済みユーザーを取得
+* エラーハンドリング: ルートハンドラが返す `Result` 型を ts-pattern でマッチし、適切な HTTP レスポンスに変換
+
+### routes/
+* `*.route.ts`: @hono/zod-openapi による OpenAPI スキーマ定義と Zod バリデーション
+* `*.ts`: ルートハンドラ。service を呼び出し、Result を受け取り、レスポンスを返す
+* ルートハンドラ内で ts-pattern を使い、service からの Result<T, E> を HTTP レスポンスにマッピング
+
+```typescript
+// routes/conversations.ts — ルートハンドラの例
+import { match } from "ts-pattern";
+import { getAuthUser } from "../middleware/auth";
+
+app.get("/v1/conversations", async (c) => {
+  const user = getAuthUser(c);
+  const result = await conversationService.listByOwner(user.id);
+
+  return match(result)
+    .with({ _tag: "Ok" }, ({ value }) => c.json({ data: value }))
+    .with({ _tag: "Err" }, ({ error }) =>
+      match(error)
+        .with(DBError.is, () => c.json({ error: { code: "INTERNAL_ERROR", message: "Database error" } }, 500))
+        .exhaustive()
+    )
+    .exhaustive();
+});
+```
+
+### service/
+* ユースケースを表現。domain と infra を組み合わせてビジネスロジックを実行
+* ResultAsync を返す
+
+### domain/
+* ドメインモデル、ドメインサービス、ビジネスルール
+* 外部レイヤーに依存しない
+
+### infra/
+* DB クエリ（Drizzle ORM）、外部 API クライアント（Gemini / Firebase Admin）
+* ResultAsync を返す
+
 # REST API Structure
 * Every route should start with /v1
 * Follow RESTful. For instance,
-  * GET /v1/users
-  * POST /v1/users
-  * GET /v1/stores/:storeId/staffs
-  * POST /v1/invites/:inviteId/accept
+  * GET /v1/conversations
+  * POST /v1/conversations
+  * GET /v1/conversations/:conversationId/branches
+  * POST /v1/conversations/:conversationId/chat
+  * POST /v1/conversations/:conversationId/merge
+  * POST /v1/repositories/:repositoryId/push
 # Other information
-* You can get session user by getAuthUser(c) (c is Context in Hono.js). Use in src/routes/foo.ts
+* You can get session user by `getAuthUser(c)` (c is Context in Hono.js). Defined in `src/middleware/auth.ts`, used in `src/routes/*.ts`

@@ -41,8 +41,9 @@
 
 ### データベースマイグレーション
 
-- マイグレーションツールの導入が必要（候補: Prisma Migrate, Drizzle Kit, node-pg-migrate）
-- CI/CD パイプラインにマイグレーションステップを追加
+- **Drizzle Kit** を使用（Drizzle ORM と統合）
+- CI/CD パイプライン（Cloud Build）のデプロイ前ステップでマイグレーションを実行
+- ロールバック: Drizzle Kit にはロールバック機能がないため、修正用の新しいマイグレーションを作成して対応
 
 ## 環境構成
 
