@@ -10,11 +10,15 @@
     "fix": "prettier --write ."
   },
   "dependencies": {
+    "@xyflow/react": "^12.10.1",
+    "dompurify": "^3.3.3",
+    "elkjs": "^0.11.1",
     "firebase": "^12.10.0",
     "next": "16.1.6",
     "pnpm": "^10.32.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
