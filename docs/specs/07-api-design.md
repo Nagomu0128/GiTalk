@@ -54,7 +54,9 @@ Hono.js で構築する REST API の設計。
 | GET | `/v1/conversations` | 自分の会話一覧取得 | 必須 | Yes |
 | GET | `/v1/conversations/:id` | 会話詳細取得 | 必須 | Yes |
 | PATCH | `/v1/conversations/:id` | 会話情報更新（タイトル等） | 必須 | Yes |
-| DELETE | `/v1/conversations/:id` | 会話削除 | 必須 | Yes |
+| DELETE | `/v1/conversations/:id` | 会話削除（soft delete） | 必須 | Yes |
+| GET | `/v1/conversations/deleted` | 削除済み会話一覧（30日以内） | 必須 | Yes |
+| POST | `/v1/conversations/:id/restore` | 削除済み会話の復元 | 必須 | Yes |
 
 **POST /v1/conversations レスポンス:**
 会話作成時にデフォルトブランチ "main"（`is_default: true`）を自動作成し、`active_branch_id` にセットして返す。
@@ -119,12 +121,14 @@ Soft delete。`deleted_at = NOW()` を設定する。物理削除はしない。
     {
       "id": "uuid",
       "parent_id": null,
+      "branch_id": "uuid",
       "node_type": "message",
       "user_message": "...",
       "ai_response": "...",
       "model": "gemini-1.5-flash",
       "token_count": 500,
       "metadata": null,
+      "created_by": "uuid",
       "created_at": "2026-03-18T00:00:00Z"
     }
   ]
@@ -269,9 +273,39 @@ GET /v1/conversations/:id/diff?branch_a=uuid&branch_b=uuid
 | PATCH | `/v1/repositories/:id` | リポジトリ更新 | 必須 | Yes |
 | DELETE | `/v1/repositories/:id` | リポジトリ削除 | 必須 | Yes |
 | GET | `/v1/repositories/:id/branches` | リポジトリのブランチ一覧 | 条件付き | Yes |
-| GET | `/v1/repositories/:id/nodes` | リポジトリの全ノード | 条件付き | Yes |
+| GET | `/v1/repositories/:id/nodes` | リポジトリの全ノード（RepositoryNode） | 条件付き | Yes |
 
 > 「条件付き」= public ならば認証不要、private は認証+所有者チェック。未認証で private にアクセスした場合は `404 NOT_FOUND`（`403` ではなく、リポジトリの存在を隠すため）。
+
+**GET /v1/repositories/:id/nodes レスポンス:**
+RepositoryNode をブランチごとにグループ化して返す。Conversation の Node とは独立したデータ。
+
+```json
+{
+  "branches": [
+    {
+      "repository_branch_id": "uuid",
+      "name": "main",
+      "nodes": [
+        {
+          "id": "uuid",
+          "parent_repository_node_id": null,
+          "node_type": "message",
+          "user_message": "...",
+          "ai_response": "...",
+          "model": "gemini-1.5-flash",
+          "token_count": 500,
+          "metadata": null,
+          "branch_color": "#3b82f6",
+          "original_created_at": "2026-03-18T00:00:00Z"
+        }
+      ]
+    }
+  ]
+}
+```
+
+> `branch_color` はバックエンド側で `RepositoryBranch.id` をハッシュして HSL カラーを生成し、レスポンスに含める。
 
 ### Push
 
@@ -288,7 +322,21 @@ GET /v1/conversations/:id/diff?branch_a=uuid&branch_b=uuid
 ```
 
 - `branch_ids` を省略または空配列の場合、**全ブランチをpush**
-- 同一 `repository_id` + `source_branch_id` の組み合わせが既に存在する場合は UPDATE（再push）
+- 同一 `repository_id` + `source_branch_id` の組み合わせが既に存在する場合、既存の RepositoryNode を全削除して新しいノード群で置換（UPSERT）
+
+**Push レスポンス:**
+```json
+{
+  "pushed_branches": [
+    {
+      "repository_branch_id": "uuid",
+      "name": "main",
+      "node_count": 12,
+      "pushed_at": "2026-03-18T00:00:00Z"
+    }
+  ]
+}
+```
 
 ### 検索
 

@@ -223,6 +223,7 @@ CREATE TABLE repository_node (
   model VARCHAR(50) NOT NULL,
   token_count INTEGER NOT NULL DEFAULT 0,
   metadata JSONB,
+  original_branch_name VARCHAR(100),
   original_created_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -230,6 +231,8 @@ CREATE TABLE repository_node (
 CREATE INDEX idx_repository_node_branch ON repository_node(repository_branch_id);
 CREATE INDEX idx_repository_node_parent ON repository_node(parent_repository_node_id);
 ```
+
+> **ブランチ色分け:** `original_branch_name` に元の Branch 名を保存する。リポジトリ閲覧時のツリー色分けは `repository_branch_id` をハッシュして HSL カラーを生成する（Conversation 側の `branch_id` と同じアルゴリズム）。`original_branch_name` はメタ情報として表示に使用。
 
 > **Push のデータ独立性:** Push 時にブランチの head からルートまでのパス上の全ノードを `repository_node` にコピーする。`parent_repository_node_id` は RepositoryNode 内で自己完結するため、元の Conversation を削除してもリポジトリのデータは完全に保持される。
 

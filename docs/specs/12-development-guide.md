@@ -31,7 +31,7 @@ docker run --name gitalk-postgres \
 
 **Firebase Emulator は使用しない。** 開発環境でも実際の Firebase プロジェクト（`gitalk-01100128`）に接続する。
 
-1. Firebase Console で Authentication を有効化（Google / メール・パスワード）
+1. Firebase Console で Authentication を有効化（Google プロバイダのみ）
 2. フロントエンドの `.env.local` に Firebase クライアント設定を記載:
 
 ```env
