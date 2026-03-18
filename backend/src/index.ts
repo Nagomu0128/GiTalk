@@ -7,6 +7,7 @@ import { authMiddleware } from './middleware/auth.js';
 import { conversationsRouter } from './routes/conversations.js';
 import { branchesRouter } from './routes/branches.js';
 import { nodesRouter } from './routes/nodes.js';
+import { chatRouter } from './routes/chat.js';
 import { appLogger } from './shared/logger.js';
 
 const logger = appLogger('server');
@@ -45,6 +46,7 @@ app.use('/v1/*', authMiddleware);
 app.route('/v1/conversations', conversationsRouter);
 app.route('/v1/conversations/:conversationId/branches', branchesRouter);
 app.route('/v1/conversations/:conversationId/nodes', nodesRouter);
+app.route('/v1/conversations/:conversationId/chat', chatRouter);
 
 // ============================================================
 // Start server
