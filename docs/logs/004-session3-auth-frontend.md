@@ -41,6 +41,11 @@
 ## 確認結果
 - `tsc --noEmit`: パス
 - `pnpm lint`: パス
+- **E2E 認証テスト: パス** — Google ログイン → バックエンド `/v1/auth/me` 呼び出しで Firebase UID・displayName・DB User ID が正常に返却されることを確認。テスト用の一時エンドポイント・ボタンは確認後に削除済み
+
+### CI ビルドエラー修正
+- `lib/firebase.ts` がモジュールインポート時に即座に Firebase を初期化していたため、CI の `next build`（静的ページ生成）で `auth/invalid-api-key` エラーが発生
+- 修正: `auth` の直接エクスポートを `getFirebaseAuth()` 遅延ゲッターに変更。全コンシューマー（auth-provider, login, dashboard）を更新
 
 ## 次のステップ
 Session 4: 会話コア バックエンド（T2-1 + T2-2 + T2-3 + T2-4）
