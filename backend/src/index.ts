@@ -1,18 +1,43 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { errorHandler } from './middleware/error-handler.js';
+import { appLogger } from './shared/logger.js';
+
+const logger = appLogger('server');
 
 const app = new Hono();
 
-app.get('/', (c) => {
-  return c.text('Hello Hono!');
+// ============================================================
+// Global middleware
+// ============================================================
+app.use('*', errorHandler);
+
+app.use(
+  '*',
+  cors({
+    origin: [
+      'http://localhost:3000',
+      ...(process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : []),
+    ],
+    allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400,
+  }),
+);
+
+// ============================================================
+// Health check
+// ============================================================
+app.get('/health', (c) => c.json({ status: 'ok' }));
+
+// ============================================================
+// Start server
+// ============================================================
+const port = Number(process.env.PORT) || 8080;
+
+serve({ fetch: app.fetch, port }, (info) => {
+  logger.info(`Server is running on http://localhost:${info.port}`);
 });
 
-serve(
-  {
-    fetch: app.fetch,
-    port: Number(process.env.PORT) || 8080,
-  },
-  (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`);
-  },
-);
+export default app;
