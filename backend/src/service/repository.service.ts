@@ -91,7 +91,7 @@ export const pushBranches = async (
         tokenCount: node.tokenCount,
         metadata: node.metadata,
         originalBranchName: branch.name,
-        originalCreatedAt: node.createdAt,
+        originalCreatedAt: new Date(node.createdAt),
       };
     });
 
