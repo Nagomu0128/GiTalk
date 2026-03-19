@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { MoreVertical, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { ConversationCard } from '@/components/cards/conversation-card';
+import { SaveToRepoDialog } from '@/components/dialogs/save-to-repo-dialog';
 
 const API = '/api';
 
@@ -21,6 +22,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
+  const [saveTarget, setSaveTarget] = useState<ConversationSummary | null>(null);
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -116,6 +118,7 @@ export default function DashboardPage() {
               title={conv.title}
               updatedAt={conv.updatedAt}
               onDelete={handleDelete}
+              onSave={() => setSaveTarget(conv)}
             />
           ))}
         </div>
@@ -133,6 +136,14 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {saveTarget && (
+        <SaveToRepoDialog
+          conversationId={saveTarget.id}
+          conversationTitle={saveTarget.title}
+          onClose={() => setSaveTarget(null)}
+        />
+      )}
     </div>
   );
 }

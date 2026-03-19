@@ -9,12 +9,13 @@ type ConversationCardProps = {
   readonly updatedAt: string;
   readonly description?: string;
   readonly onDelete?: (id: string) => void;
+  readonly onSave?: (id: string) => void;
 };
 
 const formatDate = (iso: string): string =>
   new Date(iso).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
-export function ConversationCard({ id, title, updatedAt, description, onDelete }: ConversationCardProps) {
+export function ConversationCard({ id, title, updatedAt, description, onDelete, onSave }: ConversationCardProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -53,6 +54,14 @@ export function ConversationCard({ id, title, updatedAt, description, onDelete }
           </button>
           {menuOpen && (
             <div className="absolute right-0 top-full z-10 mt-1 w-36 rounded-lg border border-neutral-200 bg-white py-1 shadow-lg">
+              {onSave && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onSave(id); }}
+                  className="w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100"
+                >
+                  リポジトリに保存
+                </button>
+              )}
               <button
                 onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setShowDeleteConfirm(true); }}
                 className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
