@@ -2,7 +2,7 @@ import type { Content } from '@google/generative-ai';
 import { findBranchById, updateBranchHead } from '../infra/branch.js';
 import { getPathToRoot, createNode, type NodeRecord } from '../infra/node.js';
 import { updateConversation } from '../infra/conversation.js';
-import { generateContent } from '../infra/gemini.js';
+import { generateContentWithMetadata } from '../infra/gemini.js';
 import { findLCA } from '../domain/lca.js';
 import { errorBuilder, type InferError } from '../shared/error.js';
 import { appLogger } from '../shared/logger.js';
@@ -210,14 +210,14 @@ export const mergeBranches = async (
 
   const contents: Content[] = [{ role: 'user', parts: [{ text: prompt }] }];
 
-  // Gemini で要約生成
-  const summaryResult = await generateContent(contents, model);
+  // Gemini で要約生成（トークン数も取得）
+  const summaryResult = await generateContentWithMetadata(contents, model);
   if (summaryResult.isErr()) {
     logger.error('Merge summary generation failed', { error: summaryResult.error.message });
     return { ok: false, code: 'AI_SERVICE_UNAVAILABLE', message: 'Failed to generate summary', status: 502 };
   }
 
-  const summaryText = summaryResult.value;
+  const { text: summaryText, tokenCount: summaryTokenCount } = summaryResult.value;
 
   // 要約ノードを作成
   const nodeResult = await createNode({
@@ -228,7 +228,7 @@ export const mergeBranches = async (
     userMessage: `${sourceBranch.name} ブランチの統合`,
     aiResponse: summaryText,
     model,
-    tokenCount: 0,
+    tokenCount: summaryTokenCount,
     metadata: {
       merge_source_branch_id: sourceBranchId,
       merge_source_branch_name: sourceBranch.name,
