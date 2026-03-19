@@ -20,14 +20,11 @@
 
 ### Gemini API
 
-- **Secret Manager** に Gemini API キーを格納
-- Cloud Run のサービスアカウントに Secret Manager のアクセス権限を付与
-- あるいは Vertex AI 経由で Gemini を使用（GCP サービスアカウント認証で API キー不要）
+- **Google AI SDK**（`@google/generative-ai`）+ API キーベースで接続
+- `GEMINI_API_KEY` を **Secret Manager** に格納し、Cloud Run に環境変数として注入
+- Cloud Run のサービスアカウントに Secret Manager の `secretAccessor` 権限を付与
 
-**推奨: Vertex AI 経由**
-- GCP 内で完結するため認証が簡潔
-- Cloud Run → Vertex AI はサービスアカウントベースで認証
-- 追加の API キー管理が不要
+> **注:** 当初 Vertex AI 経由を予定していたが、プロジェクトのアクセス問題で Google AI SDK に切り替えた。詳細は `docs/open-issues/vertexai.md` を参照。Vertex AI の問題が解決した場合は `13-beyond-mvp.md` B-18 で移行を検討。
 
 ### Firebase Authentication
 
@@ -75,10 +72,11 @@ GitHub Push (main)
 
 | 変数名 | 説明 | 管理方法 |
 |--------|------|---------|
-| DATABASE_URL | Cloud SQL 接続文字列 | Secret Manager |
+| DATABASE_URL | Cloud SQL 接続文字列（Unix ソケット形式: `postgresql://user:pass@/db?host=/cloudsql/...`。`postgres.js` は URL パーサーが非対応のため `db/client.ts` で分解して接続） | Secret Manager |
 | FIREBASE_PROJECT_ID | Firebase プロジェクトID | 環境変数 |
 | GCP_PROJECT_ID | GCP プロジェクトID | 環境変数 |
-| GEMINI_MODEL | デフォルトのGeminiモデル | 環境変数 |
+| GEMINI_API_KEY | Google AI SDK の API キー | Secret Manager |
+| GEMINI_MODEL | デフォルトのGeminiモデル（`gemini-2.5-flash`） | 環境変数 |
 
 ### Frontend (Firebase App Hosting)
 

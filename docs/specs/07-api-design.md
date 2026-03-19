@@ -38,7 +38,7 @@ Hono.js で構築する REST API の設計。
 | description | 最大 2000 文字。空文字は NULL として扱う |
 | branch name | 1〜100文字。英数字、ハイフン、アンダースコアのみ。`^[a-zA-Z0-9_-]+$` |
 | message（チャット） | 1〜50,000文字。空文字不可 |
-| model | `gemini-1.5-flash` または `gemini-1.5-pro` のいずれか |
+| model | `gemini-2.5-flash` または `gemini-2.5-pro` のいずれか |
 | context_mode | `full`、`summary`、`minimal` のいずれか。デフォルト: `summary` |
 | summary_strategy | `concise`、`detailed`、`conclusion_only` のいずれか。デフォルト: `detailed` |
 | UUID パラメータ | UUID v4 形式 |
@@ -126,7 +126,7 @@ Soft delete。`deleted_at = NOW()` を設定する。物理削除はしない。
       "node_type": "message",
       "user_message": "...",
       "ai_response": "...",
-      "model": "gemini-1.5-flash",
+      "model": "gemini-2.5-flash",
       "token_count": 500,
       "metadata": null,
       "created_by": "uuid",
@@ -147,13 +147,13 @@ Soft delete。`deleted_at = NOW()` を設定する。物理削除はしない。
 {
   "branch_id": "uuid",
   "message": "ユーザーのメッセージ",
-  "model": "gemini-1.5-flash",
+  "model": "gemini-2.5-flash",
   "context_mode": "summary"
 }
 ```
 
 **デフォルト値:**
-- `model`: `"gemini-1.5-flash"`
+- `model`: `"gemini-2.5-flash"`
 - `context_mode`: `"summary"`
 
 **レスポンス:** SSE ストリーム（`Content-Type: text/event-stream`）
@@ -327,7 +327,7 @@ RepositoryNode をブランチごとにグループ化して返す。Conversatio
           "node_type": "message",
           "user_message": "...",
           "ai_response": "...",
-          "model": "gemini-1.5-flash",
+          "model": "gemini-2.5-flash",
           "token_count": 500,
           "metadata": null,
           "branch_color": "#3b82f6",
@@ -418,7 +418,7 @@ RepositoryNode をブランチごとにグループ化して返す。Conversatio
   "parent_node_id": "uuid",
   "user_message": "ユーザーのメッセージ",
   "ai_response": "AIの応答全文",
-  "model": "gemini-1.5-flash",
+  "model": "gemini-2.5-flash",
   "token_count": 1234
 }
 ```

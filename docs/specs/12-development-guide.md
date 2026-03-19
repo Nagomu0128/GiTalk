@@ -48,23 +48,16 @@ BACKEND_URL=http://localhost:8080
 ```env
 DATABASE_URL=postgresql://gitalk:gitalk@localhost:5432/gitalk
 FIREBASE_PROJECT_ID=gitalk-01100128
-GOOGLE_APPLICATION_CREDENTIALS=./firebase-service-account.json
-GCP_PROJECT_ID=gjh-hack
-GEMINI_MODEL=gemini-1.5-flash
+GCP_PROJECT_ID=gitalk-01100128
+GEMINI_API_KEY=（Google AI Studio で取得した API キー）
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
-> **注意:** `firebase-service-account.json` は `.gitignore` に追加し、リポジトリにコミットしないこと。
+> **注意:** `.env` は `.gitignore` に追加済み。`GEMINI_API_KEY` は [Google AI Studio](https://aistudio.google.com/apikey) で取得。
 
-### 3. Gemini API（Vertex AI）
+### 3. Gemini API（Google AI SDK）
 
-ローカル開発では `gcloud` の Application Default Credentials (ADC) を使用:
-
-```bash
-gcloud auth application-default login
-gcloud config set project gjh-hack
-```
-
-これにより `GOOGLE_APPLICATION_CREDENTIALS` なしでも Vertex AI にアクセスできる。
+ローカル開発では `.env` に `GEMINI_API_KEY` を設定するだけで動作する。`dotenv/config` が `index.ts` の先頭で読み込まれる。
 
 ### 4. データベースマイグレーション
 
@@ -290,8 +283,9 @@ frontend/components/
 |--------|------|------|-----|
 | DATABASE_URL | Yes | PostgreSQL 接続文字列 | `postgresql://gitalk:gitalk@localhost:5432/gitalk` |
 | FIREBASE_PROJECT_ID | Yes | Firebase プロジェクトID | `gitalk-01100128` |
-| GCP_PROJECT_ID | Yes | GCP プロジェクトID | `gjh-hack` |
-| GEMINI_MODEL | No | デフォルトモデル | `gemini-1.5-flash` |
+| GCP_PROJECT_ID | Yes | GCP プロジェクトID | `gitalk-01100128` |
+| GEMINI_API_KEY | Yes | Google AI SDK API キー | `AIza...` |
+| GEMINI_MODEL | No | デフォルトモデル | `gemini-2.5-flash` |
 | PORT | No | サーバーポート | `8080` |
 
 ### Frontend (.env.local)

@@ -3,7 +3,9 @@
 ## 概要
 
 Gemini API を使用したAIチャット機能と、ツリー構造に基づくコンテキスト管理の設計。
-Gemini API は Vertex AI 経由で使用し、GCP サービスアカウント認証で接続する。
+Gemini API は Google AI SDK（`@google/generative-ai`）+ API キーベースで接続する。
+
+> **注:** 当初 Vertex AI（`@google-cloud/vertexai`）を予定していたが、プロジェクトのアクセス問題で Google AI SDK に切り替えた。詳細は `docs/open-issues/vertexai.md` を参照。
 
 ## Gemini API 連携
 
@@ -11,10 +13,11 @@ Gemini API は Vertex AI 経由で使用し、GCP サービスアカウント認
 
 | モデルID | 用途 | 備考 |
 |---------|------|------|
-| `gemini-1.5-flash` | デフォルト。高速・低コスト | 開発段階ではこちらを優先 |
-| `gemini-1.5-pro` | 高品質な応答が必要な場合 | ユーザーが明示的に選択 |
+| `gemini-2.5-flash` | デフォルト。高速・低コスト | 開発段階ではこちらを優先 |
+| `gemini-2.5-pro` | 高品質な応答が必要な場合 | ユーザーが明示的に選択 |
+| `gemini-2.0-flash` | 旧世代モデル | 利用可能だが非推奨 |
 
-モデルID はそのまま Vertex AI SDK の `getGenerativeModel()` に渡す。
+モデルID はそのまま Google AI SDK の `getGenerativeModel()` に渡す。
 
 ### 基本フロー
 
@@ -87,13 +90,13 @@ const nodeToContents = (node: Node): Content[] =>
 
 ### API リクエスト形式
 
-Vertex AI SDK を使用:
+Google AI SDK を使用:
 
 ```typescript
-import { VertexAI } from '@google-cloud/vertexai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const vertexAI = new VertexAI({ project: GCP_PROJECT_ID, location: 'asia-northeast1' });
-const model = vertexAI.getGenerativeModel({ model: selectedModel });
+const client = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = client.getGenerativeModel({ model: selectedModel });
 
 const result = await model.generateContentStream({
   contents: [
@@ -161,7 +164,7 @@ const result = await model.generateContentStream({
 
 ## モデル選択
 
-- MVP では `gemini-1.5-flash`（デフォルト）と `gemini-1.5-pro` を選択可能
+- MVP では `gemini-2.5-flash`（デフォルト）と `gemini-2.5-pro` を選択可能
 - モデル選択はメッセージ単位で切替可能（メッセージ入力エリアのドロップダウン）
 - 使用モデルは `Node.model` に記録
 - merge の要約生成には送信時に選択中のモデルを使用

@@ -63,3 +63,26 @@ export const generateContent = (
     })(),
     GeminiError.handle,
   );
+
+export const generateContentWithMetadata = (
+  contents: ReadonlyArray<Content>,
+  model?: string,
+): ResultAsync<{ text: string; tokenCount: number }, GeminiError> =>
+  ResultAsync.fromPromise(
+    (async () => {
+      const client = getClient();
+      const resolvedModel = model ?? getDefaultModel();
+      const generativeModel = client.getGenerativeModel({ model: resolvedModel });
+
+      const result = await generativeModel.generateContent({
+        contents: contents as Content[],
+      });
+
+      const response = result.response;
+      return {
+        text: response.candidates?.[0]?.content?.parts?.[0]?.text ?? '',
+        tokenCount: response.usageMetadata?.totalTokenCount ?? 0,
+      };
+    })(),
+    GeminiError.handle,
+  );
