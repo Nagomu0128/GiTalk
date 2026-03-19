@@ -18,7 +18,7 @@ const FEATURES = [
     icon: '/icon-save.png',
     title: '保存する',
     description: 'リポジトリとして構造ごと保存',
-    darkBg: false,
+    darkBg: true,
   },
 ] as const;
 
