@@ -10,20 +10,7 @@ steps:
         pnpm lint
     dir: "backend"
 
-  # Step 1: DB Migration (via Cloud SQL Auth Proxy)
-  - name: "node:20"
-    entrypoint: "bash"
-    args:
-      - "-c"
-      - |
-        npm install -g pnpm && \
-        pnpm install --frozen-lockfile && \
-        echo "Running database migration..." && \
-        DATABASE_URL="$$DATABASE_URL" pnpm db:push
-    dir: "backend"
-    secretEnv: ["DATABASE_URL"]
-
-  # Step 2: Docker build
+  # Step 1: Docker build
   - name: "gcr.io/cloud-builders/docker"
     args:
       - "build"
@@ -35,14 +22,14 @@ steps:
       - "backend/Dockerfile"
       - "backend"
 
-  # Step 3: Docker push
+  # Step 2: Docker push
   - name: "gcr.io/cloud-builders/docker"
     args:
       - "push"
       - "--all-tags"
       - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE_NAME}"
 
-  # Step 4: Deploy to Cloud Run
+  # Step 3: Deploy to Cloud Run
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: "gcloud"
     args:
@@ -55,11 +42,6 @@ steps:
       - "${_REGION}"
       - "--add-cloudsql-instances"
       - "${_CLOUDSQL_INSTANCE}"
-
-availableSecrets:
-  secretManager:
-    - versionName: "projects/${PROJECT_ID}/secrets/gitalk-database-url/versions/latest"
-      env: "DATABASE_URL"
 
 options:
   default_logs_bucket_behavior: REGIONAL_USER_OWNED_BUCKET
