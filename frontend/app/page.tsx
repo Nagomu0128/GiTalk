@@ -47,7 +47,7 @@ export default function LandingPage() {
       {/* ヒーロー */}
       <section className="flex flex-col items-center px-6 py-24 text-center">
         <div className="mb-6">
-          <Image src="/logo-light.png" alt="GiTalk" width={80} height={80} />
+          <Image src="/logo-light.png" alt="GiTalk" width={120} height={120} />
         </div>
         <h1 className="mb-4 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
           AIとの会話を、もっと構造的に。
@@ -79,6 +79,7 @@ export default function LandingPage() {
                   width={40}
                   height={40}
                   className="object-contain"
+                  unoptimized
                 />
               </div>
               <h3 className="mb-2 text-base font-semibold text-gray-900">{feature.title}</h3>
