@@ -1,9 +1,14 @@
 import { listBranchesByConversation } from '../infra/branch.js';
-import { getPathToRoot } from '../infra/node.js';
+import { createNode, getPathToRoot } from '../infra/node.js';
+import { createBranch } from '../infra/branch.js';
+import { createConversation } from '../infra/conversation.js';
 import {
+  findRepositoryById,
   upsertRepositoryBranch,
   deleteRepositoryNodesByBranch,
   insertRepositoryNodes,
+  listRepositoryBranches,
+  listRepositoryNodes,
 } from '../infra/repository.js';
 import { appLogger } from '../shared/logger.js';
 
@@ -113,4 +118,102 @@ export const pushBranches = async (
   }
 
   return { ok: true, data: results };
+};
+
+// ============================================================
+// Clone
+// ============================================================
+export const cloneRepository = async (
+  repositoryId: string,
+  userId: string,
+): Promise<
+  | { ok: true; data: { conversationId: string; title: string } }
+  | { ok: false; code: string; message: string; status: number }
+> => {
+  const repoResult = await findRepositoryById(repositoryId);
+  if (repoResult.isErr() || !repoResult.value) {
+    return { ok: false, code: 'NOT_FOUND', message: 'Repository not found', status: 404 };
+  }
+
+  const repo = repoResult.value;
+
+  // 公開リポジトリまたは所有者のみ clone 可能
+  if (repo.visibility === 'private' && repo.ownerId !== userId) {
+    return { ok: false, code: 'NOT_FOUND', message: 'Repository not found', status: 404 };
+  }
+
+  // RepositoryBranch + RepositoryNode を取得
+  const repoBranchesResult = await listRepositoryBranches(repositoryId);
+  if (repoBranchesResult.isErr()) {
+    return { ok: false, code: 'INTERNAL_ERROR', message: 'Failed to list branches', status: 500 };
+  }
+
+  // 新 Conversation 作成
+  const convResult = await createConversation({
+    ownerId: userId,
+    title: `${repo.title} (clone)`,
+  });
+  if (convResult.isErr()) {
+    return { ok: false, code: 'INTERNAL_ERROR', message: 'Failed to create conversation', status: 500 };
+  }
+
+  const conversationId = convResult.value.conversation.id;
+  const repoBranches = repoBranchesResult.value;
+
+  // 各 RepositoryBranch を Branch + Node にコピー
+  for (const repoBranch of repoBranches) {
+    const repoNodesResult = await listRepositoryNodes(repoBranch.id);
+    if (repoNodesResult.isErr()) continue;
+
+    const repoNodes = repoNodesResult.value;
+    if (repoNodes.length === 0) continue;
+
+    // RepositoryNode → Node にコピー（parent_id のマッピング）
+    const nodeIdMap = new Map<string, string>();
+
+    // ノードを親子順にソート（parentRepositoryNodeId が null のものが先）
+    const sortedNodes = [...repoNodes].sort((a, b) => {
+      if (!a.parentRepositoryNodeId) return -1;
+      if (!b.parentRepositoryNodeId) return 1;
+      return new Date(a.originalCreatedAt).getTime() - new Date(b.originalCreatedAt).getTime();
+    });
+
+    // ブランチ作成（最初のブランチは main として既に作成済み）
+    const isFirst = repoBranch === repoBranches[0];
+    const branchId = isFirst
+      ? convResult.value.branch.id
+      : await (async () => {
+          const firstNodeId = nodeIdMap.values().next().value;
+          const brResult = await createBranch({
+            conversationId,
+            name: repoBranch.name,
+            baseNodeId: firstNodeId ?? convResult.value.branch.headNodeId ?? '',
+          });
+          return brResult.isOk() ? brResult.value.id : '';
+        })();
+
+    if (!branchId) continue;
+
+    // ノードを順に作成
+    for (const repoNode of sortedNodes) {
+      const nodeResult = await createNode({
+        conversationId,
+        branchId,
+        parentId: repoNode.parentRepositoryNodeId ? nodeIdMap.get(repoNode.parentRepositoryNodeId) ?? null : null,
+        nodeType: repoNode.nodeType as 'message' | 'summary' | 'system',
+        userMessage: repoNode.userMessage,
+        aiResponse: repoNode.aiResponse,
+        model: repoNode.model,
+        tokenCount: repoNode.tokenCount,
+        metadata: repoNode.metadata,
+        createdBy: userId,
+      });
+
+      if (nodeResult.isOk()) {
+        nodeIdMap.set(repoNode.id, nodeResult.value.id);
+      }
+    }
+  }
+
+  return { ok: true, data: { conversationId, title: `${repo.title} (clone)` } };
 };

@@ -94,6 +94,22 @@ export default function RepositoryDetailPage() {
           </span>
         </div>
         {repo.description && <p className="mt-1 text-sm text-gray-500">{repo.description}</p>}
+        <button
+          onClick={async () => {
+            const token = await user?.getIdToken();
+            const res = await fetch(`${API}/v1/repositories/${repoId}/clone`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) {
+              const data = await res.json();
+              router.push(`/conversation/${data.conversationId}`);
+            }
+          }}
+          className="mt-2 rounded-lg border border-gray-300 px-3 py-1 text-sm text-gray-600 hover:bg-gray-50"
+        >
+          📋 コピーして使う
+        </button>
       </div>
 
       <div className="border-b bg-white px-6">
