@@ -34,3 +34,10 @@ variable "db_password" {
   sensitive = true
   default   = null
 }
+
+variable "gemini_api_key" {
+  type        = string
+  sensitive   = true
+  description = "Google AI Studio API key for Gemini"
+  default     = null
+}

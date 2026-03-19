@@ -1,6 +1,6 @@
-# 000 - 未解決の課題
+# 000 - 解決済みの課題
 
-## Vertex AI が使用できない問題
+## Vertex AI が使用できない問題 【解決済み: 2026-03-20】
 
 ### 概要
 specs（04-ai-integration.md）では Gemini API を Vertex AI 経由（`@google-cloud/vertexai`）で使用する設計だったが、実際にはプロジェクトからモデルにアクセスできず、Google AI SDK（`@google/generative-ai`）+ API キーベースに切り替えた。
@@ -18,25 +18,18 @@ specs（04-ai-integration.md）では Gemini API を Vertex AI 経由（`@google
 - 一方、同プロジェクトの Firebase API キーでは `generativelanguage.googleapis.com` が `API_KEY_SERVICE_BLOCKED` で拒否
 - Google AI Studio で別途作成した API キーでは `gemini-2.5-flash` が正常動作
 
-### 現在の暫定対応
-- `@google/generative-ai`（Google AI SDK）+ API キーベースで Gemini API を呼び出す
+### 原因（推定）
+- Firebase プロジェクトである `gitalk-01100128` では Vertex AI のモデルアクセスに必要な課金設定や利用規約同意が未完了の可能性
+- Firebase プロジェクト固有の制限の可能性
+
+### 対応内容（fix/vertex-ai ブランチ）
+- `@google-cloud/vertexai` → `@google/generative-ai`（Google AI SDK）に移行
+- `GEMINI_API_KEY` 環境変数で認証（Google AI Studio 発行の API キー）
 - デフォルトモデルを `gemini-2.5-flash` に変更
-- `GEMINI_API_KEY` 環境変数を追加（`.env` および将来的に Secret Manager で管理）
+- Terraform: `GEMINI_API_KEY` を Secret Manager に追加、Cloud Run に注入
+- Terraform: Vertex AI IAM ロール（`roles/aiplatform.user`）をコメントアウト
+- specs（04, 08, 12）を Google AI SDK ベースに更新
 
-### 影響範囲
-- ローカル開発: 問題なし（API キーで動作確認済み）
-- Cloud Run デプロイ: `GEMINI_API_KEY` を Secret Manager に追加する必要がある（Terraform 修正必要）
-- specs との乖離: 04-ai-integration.md、08-infrastructure.md、12-development-guide.md の記述が実装と不一致
-
-### 未調査の原因候補
-- プロジェクトの課金設定が Vertex AI のモデルアクセスに必要な条件を満たしていない可能性
-- Vertex AI の利用規約への同意が未完了の可能性
-- プロジェクトが Firebase プロジェクトであることによる制限の可能性
-- リージョン別のモデル可用性の問題（ただし us-central1 でも 404）
-
-### 今後の対応
-- [ ] GCP Console で Vertex AI のモデルガーデンから直接モデルにアクセスできるか確認
-- [ ] 課金アカウントの設定・利用規約の同意状況を確認
-- [ ] 解決した場合、Vertex AI（サービスアカウント認証）に戻し、API キーを不要にする
-- [ ] 解決しない場合、specs を Google AI SDK ベースに更新する
-- [ ] Cloud Run デプロイ用に GEMINI_API_KEY を Secret Manager + Terraform で管理する
+### 将来的な対応
+- Vertex AI の課金・利用規約問題が解決した場合、Vertex AI（サービスアカウント認証）に戻すことも可能
+  - その場合は Terraform の Vertex AI IAM コメントを復活させ、`@google-cloud/vertexai` を再導入する

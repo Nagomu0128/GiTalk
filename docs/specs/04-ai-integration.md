@@ -11,10 +11,12 @@ Gemini API は Vertex AI 経由で使用し、GCP サービスアカウント認
 
 | モデルID | 用途 | 備考 |
 |---------|------|------|
-| `gemini-1.5-flash` | デフォルト。高速・低コスト | 開発段階ではこちらを優先 |
+| `gemini-2.5-flash` | デフォルト。高速・低コスト | 現行デフォルト |
+| `gemini-2.0-flash` | バランス型 | ユーザーが選択可能 |
+| `gemini-1.5-flash` | 旧世代。互換用途 | 選択可能 |
 | `gemini-1.5-pro` | 高品質な応答が必要な場合 | ユーザーが明示的に選択 |
 
-モデルID はそのまま Vertex AI SDK の `getGenerativeModel()` に渡す。
+モデルID はそのまま Google AI SDK の `getGenerativeModel()` に渡す。
 
 ### 基本フロー
 
@@ -87,13 +89,13 @@ const nodeToContents = (node: Node): Content[] =>
 
 ### API リクエスト形式
 
-Vertex AI SDK を使用:
+Google AI SDK を使用（`@google/generative-ai`）:
 
 ```typescript
-import { VertexAI } from '@google-cloud/vertexai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const vertexAI = new VertexAI({ project: GCP_PROJECT_ID, location: 'asia-northeast1' });
-const model = vertexAI.getGenerativeModel({ model: selectedModel });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: selectedModel });
 
 const result = await model.generateContentStream({
   contents: [
@@ -102,6 +104,10 @@ const result = await model.generateContentStream({
   ],
 });
 ```
+
+> **Note:** Vertex AI SDK（`@google-cloud/vertexai`）は使用しない。
+> プロジェクト `gitalk-01100128` で Vertex AI 経由のモデルアクセスが 404 を返すため、
+> Google AI Studio の API キーを使用する方式に切り替えた。
 
 ## コンテキストモード
 
@@ -161,7 +167,7 @@ const result = await model.generateContentStream({
 
 ## モデル選択
 
-- MVP では `gemini-1.5-flash`（デフォルト）と `gemini-1.5-pro` を選択可能
+- MVP では `gemini-2.5-flash`（デフォルト）と `gemini-1.5-flash`、`gemini-2.0-flash`、`gemini-1.5-pro` を選択可能
 - モデル選択はメッセージ単位で切替可能（メッセージ入力エリアのドロップダウン）
 - 使用モデルは `Node.model` に記録
 - merge の要約生成には送信時に選択中のモデルを使用
@@ -171,7 +177,7 @@ const result = await model.generateContentStream({
 ### シーケンス
 
 ```
-Client                    Hono Backend                  Gemini API (Vertex AI)
+Client                    Hono Backend                  Gemini API (Google AI)
   │                          │                               │
   │  POST /chat              │                               │
   │  (message, branch_id,    │                               │

@@ -20,14 +20,13 @@
 
 ### Gemini API
 
-- **Secret Manager** に Gemini API キーを格納
+- **Google AI SDK**（`@google/generative-ai`）を使用（Vertex AI SDK は使用しない）
+- **Secret Manager** に `GEMINI_API_KEY`（Google AI Studio で発行した API キー）を格納
 - Cloud Run のサービスアカウントに Secret Manager のアクセス権限を付与
-- あるいは Vertex AI 経由で Gemini を使用（GCP サービスアカウント認証で API キー不要）
 
-**推奨: Vertex AI 経由**
-- GCP 内で完結するため認証が簡潔
-- Cloud Run → Vertex AI はサービスアカウントベースで認証
-- 追加の API キー管理が不要
+> **Note:** Vertex AI 経由（`@google-cloud/vertexai`）は使用しない。
+> プロジェクト `gitalk-01100128` で Vertex AI のモデルアクセスが 404 を返すため、
+> Google AI Studio の API キーを使用する方式に切り替えた。
 
 ### Firebase Authentication
 
@@ -76,6 +75,7 @@ GitHub Push (main)
 | 変数名 | 説明 | 管理方法 |
 |--------|------|---------|
 | DATABASE_URL | Cloud SQL 接続文字列 | Secret Manager |
+| GEMINI_API_KEY | Google AI Studio API キー | Secret Manager |
 | FIREBASE_PROJECT_ID | Firebase プロジェクトID | 環境変数 |
 | GCP_PROJECT_ID | GCP プロジェクトID | 環境変数 |
 | GEMINI_MODEL | デフォルトのGeminiモデル | 環境変数 |
@@ -93,9 +93,10 @@ GitHub Push (main)
 |---------|----------------|
 | Cloud Run | 月200万リクエスト無料、cpu_idle=true |
 | Cloud SQL (db-f1-micro) | ~$10/月 |
+| Gemini API (2.5 Flash) | 入力: $0.15/100万tokens、出力: $0.60/100万tokens |
 | Gemini API (1.5 Flash) | 入力: $0.075/100万tokens、出力: $0.30/100万tokens |
 | Gemini API (1.5 Pro) | 入力: $1.25/100万tokens、出力: $5.00/100万tokens |
 | Firebase Auth | 月50,000 MAU 無料 |
 | Firebase App Hosting | 無料枠あり |
 
-> 開発段階ではGemini 1.5 Flash をデフォルトにしてコストを抑える。
+> 開発段階では Gemini 2.5 Flash をデフォルトにする。

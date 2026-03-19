@@ -1,8 +1,12 @@
-import type { Content } from '@google/generative-ai';
 import { getPathToRoot, createNode } from '../infra/node.js';
 import { findBranchById, updateBranchHead } from '../infra/branch.js';
 import { updateConversation } from '../infra/conversation.js';
-import { generateContentStream, generateContent, isValidModel } from '../infra/gemini.js';
+import {
+  generateContentStream,
+  generateContent,
+  isValidModel,
+  type Content,
+} from '../infra/gemini.js';
 import { buildContextContents } from '../domain/context-builder.js';
 import { errorBuilder, type InferError } from '../shared/error.js';
 import { appLogger } from '../shared/logger.js';

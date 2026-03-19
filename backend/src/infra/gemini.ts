@@ -3,12 +3,14 @@ import { ResultAsync } from 'neverthrow';
 import { errorBuilder, type InferError } from '../shared/error.js';
 import { appLogger } from '../shared/logger.js';
 
+export type { Content };
+
 const logger = appLogger('gemini');
 
 export const GeminiError = errorBuilder('GeminiError');
 export type GeminiError = InferError<typeof GeminiError>;
 
-const VALID_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'] as const;
+const VALID_MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-2.5-flash'] as const;
 
 type ValidModel = (typeof VALID_MODELS)[number];
 
@@ -35,7 +37,11 @@ export const generateContentStream = (
       const resolvedModel = model ?? getDefaultModel();
       const generativeModel = client.getGenerativeModel({ model: resolvedModel });
 
-      logger.info('Starting stream', { model: resolvedModel, contentsLength: contents.length });
+      logger.info('Starting stream', {
+        model: resolvedModel,
+        contentsLength: contents.length,
+        provider: 'google-ai',
+      });
 
       return generativeModel.generateContentStream({
         contents: contents as Content[],

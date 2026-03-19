@@ -1,4 +1,4 @@
-import type { Content } from '@google/generative-ai';
+import type { Content } from '../infra/gemini.js';
 import { findBranchById, updateBranchHead } from '../infra/branch.js';
 import { getPathToRoot, createNode, type NodeRecord } from '../infra/node.js';
 import { updateConversation } from '../infra/conversation.js';

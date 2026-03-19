@@ -46,13 +46,13 @@ resource "google_service_account" "backend" {
 }
 
 # ============================================================
-# IAM: Vertex AI access for Cloud Run
+# IAM: Vertex AI access for Cloud Run (reserved for future use)
 # ============================================================
-resource "google_project_iam_member" "backend_vertex_ai" {
-  project = var.project_id
-  role    = "roles/aiplatform.user"
-  member  = "serviceAccount:${google_service_account.backend.email}"
-}
+# resource "google_project_iam_member" "backend_vertex_ai" {
+#   project = var.project_id
+#   role    = "roles/aiplatform.user"
+#   member  = "serviceAccount:${google_service_account.backend.email}"
+# }
 
 # ============================================================
 # Artifact Registry
@@ -104,6 +104,19 @@ module "secret_database_url" {
   depends_on = [google_project_service.apis]
 }
 
+module "secret_gemini_api_key" {
+  source = "../../modules/secret_manager"
+
+  secret_id   = "${var.app_name}-gemini-api-key"
+  secret_data = var.gemini_api_key
+
+  accessor_members = [
+    "serviceAccount:${google_service_account.backend.email}",
+  ]
+
+  depends_on = [google_project_service.apis]
+}
+
 # ============================================================
 # Cloud Storage
 # ============================================================
@@ -143,13 +156,18 @@ module "cloud_run_backend" {
     { name = "GCS_BUCKET", value = module.cloud_storage.bucket_name },
     { name = "FIREBASE_PROJECT_ID", value = var.firebase_project_id },
     { name = "GCP_PROJECT_ID", value = var.project_id },
-    { name = "GEMINI_MODEL", value = "gemini-1.5-flash" },
+    { name = "GEMINI_MODEL", value = "gemini-2.5-flash" },
   ]
 
   secret_env_vars = [
     {
       name      = "DATABASE_URL"
       secret_id = module.secret_database_url.secret_id
+      version   = "latest"
+    },
+    {
+      name      = "GEMINI_API_KEY"
+      secret_id = module.secret_gemini_api_key.secret_id
       version   = "latest"
     },
   ]
