@@ -37,3 +37,4 @@
 ## 確認結果
 - `tsc --noEmit`: パス
 - `pnpm lint`: パス
+- **B-02 E2E テスト: パス** — merge 実行後の summary ノードの `token_count` が `1982`（0 ではなく実際の値） ✅
