@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { GitBranch } from 'lucide-react';
 import { useConversationStore } from '@/stores/conversation-store';
 
 type BranchSelectorProps = {
@@ -27,11 +28,11 @@ export function BranchSelector({ onSwitch, onMerge, onDiff }: BranchSelectorProp
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm text-gray-500">🌿</span>
+      <GitBranch size={14} className="text-neutral-400" />
       <select
         value={activeBranchId ?? ''}
         onChange={(e) => onSwitch(e.target.value)}
-        className="rounded border border-gray-300 px-2 py-1 text-sm"
+        className="rounded-lg border border-neutral-600 bg-neutral-800 px-2 py-1 text-xs text-neutral-300 outline-none"
       >
         {branches.map((branch) => (
           <option key={branch.id} value={branch.id}>
@@ -43,25 +44,25 @@ export function BranchSelector({ onSwitch, onMerge, onDiff }: BranchSelectorProp
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setMenuOpen((prev) => !prev)}
-          className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 hover:bg-gray-50"
+          className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-600 text-xs text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
         >
-          ⋯
+          ···
         </button>
         {menuOpen && (
-          <div className="absolute right-0 top-full z-10 mt-1 w-52 rounded-lg border bg-white py-1 shadow-lg">
+          <div className="absolute right-0 top-full z-10 mt-1 w-52 rounded-xl border border-neutral-600 bg-neutral-800 py-1 shadow-lg">
             <button
               onClick={() => { onDiff(); setMenuOpen(false); }}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+              className="w-full px-3 py-2 text-left text-sm text-neutral-300 transition-colors hover:bg-neutral-700"
             >
-              📊 ブランチを比較
-              <span className="block text-xs text-gray-400">二つの話題の違いを確認します</span>
+              ブランチを比較
+              <span className="block text-xs text-neutral-500">二つの話題の違いを確認します</span>
             </button>
             <button
               onClick={() => { onMerge(); setMenuOpen(false); }}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+              className="w-full px-3 py-2 text-left text-sm text-neutral-300 transition-colors hover:bg-neutral-700"
             >
-              🔀 会話を統合
-              <span className="block text-xs text-gray-400">別の話題の結論をこちらに取り込みます</span>
+              会話を統合
+              <span className="block text-xs text-neutral-500">別の話題の結論をこちらに取り込みます</span>
             </button>
           </div>
         )}

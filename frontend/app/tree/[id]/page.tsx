@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useRef, useEffect, type WheelEvent as ReactWheelEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { PenLine, Search, LayoutDashboard, ChevronLeft, ArrowLeft, HelpCircle, MessageSquare, X } from 'lucide-react';
+import { PenLine, Search, LayoutDashboard, ChevronLeft, ArrowLeft, HelpCircle, MessageSquare, X, FolderGit2 } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import ReactMarkdown from 'react-markdown';
 import { Badge } from '@/components/ui/badge';
@@ -62,13 +62,26 @@ const PADDING_LEFT = 40;
 const PADDING_TOP = 40;
 const BRANCH_LABEL_WIDTH = 80;
 const HIGHLIGHT_COLOR = '#e05050';
-const EDGE_HIT_WIDTH = 12;
 
 const ZOOM_SENSITIVITY = 0.001;
 const MIN_ZOOM = 0.3;
 const MAX_ZOOM = 3;
 
 const CONTEXT_MENU_ITEMS = ['read', 'switch', 'cherry-pick', 'new branch'] as const;
+const BRANCH_MENU_ITEMS = ['merge', 'merge to', 'reset', 'diff', 'clone'] as const;
+
+type BranchMenuState = {
+  readonly visible: boolean;
+  readonly x: number;
+  readonly y: number;
+  readonly branchIndex: number;
+};
+
+type MergeState = {
+  readonly status: 'idle' | 'selecting-source' | 'merging' | 'done';
+  readonly targetBranchIndex: number | null;
+  readonly sourceBranchIndex: number | null;
+};
 
 // --- Data Conversion ---
 
@@ -236,72 +249,42 @@ const collectPathMessages = (
   return path;
 };
 
-const findBranchTip = (
-  edgeId: string,
-  edges: ReadonlyArray<GraphEdge>,
-  nodes: ReadonlyArray<GitNode>,
-): string => {
-  const edge = edges.find((e) => e.id === edgeId);
-  if (!edge) return '';
-  const toNode = nodes.find((n) => n.id === edge.toNodeId);
-  if (!toNode) return edge.toNodeId;
-
-  const branchNodes = nodes.filter((n) => n.branchIndex === toNode.branchIndex);
-  const tip = branchNodes.reduce((acc, n) => (n.column > acc.column ? n : acc), branchNodes[0]);
-  return tip.id;
-};
-
 // --- Components ---
 
 const EdgeLine = ({
   edge,
   isHighlighted,
-  onClick,
 }: {
   readonly edge: GraphEdge;
   readonly isHighlighted: boolean;
-  readonly onClick: (edgeId: string) => void;
 }) => {
   const strokeColor = isHighlighted ? HIGHLIGHT_COLOR : edge.defaultColor;
 
   if (edge.edgeType === 'segment') {
     return (
-      <g className="cursor-pointer" onClick={() => onClick(edge.id)}>
-        <line
-          x1={edge.fromX}
-          y1={edge.fromY}
-          x2={edge.toX}
-          y2={edge.toY}
-          stroke="transparent"
-          strokeWidth={EDGE_HIT_WIDTH}
-        />
-        <line
-          x1={edge.fromX}
-          y1={edge.fromY}
-          x2={edge.toX}
-          y2={edge.toY}
-          stroke={strokeColor}
-          strokeWidth={isHighlighted ? 3 : 2}
-          className="pointer-events-none transition-colors"
-        />
-      </g>
+      <line
+        x1={edge.fromX}
+        y1={edge.fromY}
+        x2={edge.toX}
+        y2={edge.toY}
+        stroke={strokeColor}
+        strokeWidth={isHighlighted ? 3 : 2}
+        className="transition-colors"
+      />
     );
   }
 
   const midX = edge.fromX + COLUMN_GAP * 0.5;
-  const path = `M ${edge.fromX} ${edge.fromY} C ${midX} ${edge.fromY}, ${midX} ${edge.toY}, ${edge.toX} ${edge.toY}`;
+  const d = `M ${edge.fromX} ${edge.fromY} C ${midX} ${edge.fromY}, ${midX} ${edge.toY}, ${edge.toX} ${edge.toY}`;
 
   return (
-    <g className="cursor-pointer" onClick={() => onClick(edge.id)}>
-      <path d={path} stroke="transparent" strokeWidth={EDGE_HIT_WIDTH} fill="none" />
-      <path
-        d={path}
-        stroke={strokeColor}
-        strokeWidth={isHighlighted ? 3 : 2}
-        fill="none"
-        className="pointer-events-none transition-colors"
-      />
-    </g>
+    <path
+      d={d}
+      stroke={strokeColor}
+      strokeWidth={isHighlighted ? 3 : 2}
+      fill="none"
+      className="transition-colors"
+    />
   );
 };
 
@@ -347,32 +330,62 @@ const NodeDot = ({
 
 const BADGE_HEIGHT = 32;
 
+const MERGE_LABEL_WIDTH = 120;
+
 const BranchLabel = ({
   branch,
   branchIndex,
   maxColumn,
+  isSelected,
+  mergeRole,
+  onClick,
 }: {
   readonly branch: GitBranch;
   readonly branchIndex: number;
   readonly maxColumn: number;
+  readonly isSelected: boolean;
+  readonly mergeRole: 'merge-target' | 'merge-source' | null;
+  readonly onClick: (branchIndex: number, event: React.MouseEvent) => void;
 }) => {
   const x = PADDING_LEFT + (maxColumn + 1.5) * COLUMN_GAP;
   const y = PADDING_TOP + branchIndex * ROW_GAP;
+  const isMergeHighlighted = mergeRole !== null;
 
   return (
-    <foreignObject
-      x={x}
-      y={y - BADGE_HEIGHT / 2}
-      width={BRANCH_LABEL_WIDTH}
-      height={BADGE_HEIGHT}
-    >
-      <Badge
-        variant="outline"
-        className="h-full w-full justify-center border-neutral-600 bg-neutral-800 text-neutral-300"
+    <>
+      <foreignObject
+        x={x}
+        y={y - BADGE_HEIGHT / 2}
+        width={BRANCH_LABEL_WIDTH}
+        height={BADGE_HEIGHT}
       >
-        {branch.name}
-      </Badge>
-    </foreignObject>
+        <Badge
+          variant="outline"
+          className={`h-full w-full cursor-pointer justify-center transition-colors ${
+            isMergeHighlighted
+              ? 'border-amber-500 bg-amber-500/20 text-amber-300'
+              : isSelected
+                ? 'border-amber-500 bg-amber-500/20 text-amber-300'
+                : 'border-neutral-600 bg-neutral-800 text-neutral-300 hover:border-neutral-500 hover:bg-neutral-700'
+          }`}
+          onClick={(e) => onClick(branchIndex, e as unknown as React.MouseEvent)}
+        >
+          {branch.name}
+        </Badge>
+      </foreignObject>
+      {mergeRole && (
+        <foreignObject
+          x={x + BRANCH_LABEL_WIDTH + 4}
+          y={y - BADGE_HEIGHT / 2}
+          width={MERGE_LABEL_WIDTH}
+          height={BADGE_HEIGHT}
+        >
+          <span className="flex h-full items-center text-xs text-amber-400">
+            {mergeRole === 'merge-target' ? 'merge to 選択中' : 'merge 選択中'}
+          </span>
+        </foreignObject>
+      )}
+    </>
   );
 };
 
@@ -414,6 +427,44 @@ const NodePopover = ({
   </Popover>
 );
 
+const BranchPopover = ({
+  state,
+  onAction,
+  onClose,
+}: {
+  readonly state: BranchMenuState;
+  readonly onAction: (action: string, branchIndex: number) => void;
+  readonly onClose: () => void;
+}) => (
+  <Popover key={`branch-${state.branchIndex}-${state.x}-${state.y}`} open={state.visible} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <PopoverTrigger
+      className="pointer-events-none fixed h-0 w-0"
+      style={{ left: state.x, top: state.y }}
+    />
+    <PopoverContent
+      side="right"
+      sideOffset={8}
+      align="start"
+      className="w-auto min-w-[120px] !rounded-2xl border-neutral-600 bg-neutral-800 p-1"
+    >
+      {BRANCH_MENU_ITEMS.map((item) => (
+        <Button
+          key={item}
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start !rounded-xl text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100"
+          onClick={() => {
+            onAction(item, state.branchIndex);
+            onClose();
+          }}
+        >
+          {item}
+        </Button>
+      ))}
+    </PopoverContent>
+  </Popover>
+);
+
 // --- Sidebar Component ---
 
 const Sidebar = ({
@@ -422,12 +473,14 @@ const Sidebar = ({
   onNewChat,
   onSearch,
   onDashboard,
+  onRepositories,
 }: {
   readonly collapsed: boolean;
   readonly onToggle: () => void;
   readonly onNewChat: () => void;
   readonly onSearch: () => void;
   readonly onDashboard: () => void;
+  readonly onRepositories: () => void;
 }) => (
   <aside
     className={`flex h-full shrink-0 flex-col border-r border-neutral-700 bg-neutral-950 transition-all ${
@@ -468,6 +521,14 @@ const Sidebar = ({
         <LayoutDashboard size={16} className="shrink-0" />
         {!collapsed && <span>Dash Board</span>}
       </button>
+
+      <button
+        onClick={onRepositories}
+        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
+      >
+        <FolderGit2 size={16} className="shrink-0" />
+        {!collapsed && <span>リポジトリ</span>}
+      </button>
     </nav>
   </aside>
 );
@@ -485,7 +546,7 @@ const Header = ({
   readonly onSearch: () => void;
   readonly onHelp: () => void;
 }) => (
-  <header className="flex h-11 shrink-0 items-center justify-between border-b border-neutral-700 px-4">
+  <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-700 px-4">
     <button
       onClick={onBack}
       className="flex items-center gap-2 text-sm text-neutral-300 transition-colors hover:text-neutral-100"
@@ -598,6 +659,53 @@ const ChatPanel = ({
   );
 };
 
+// --- New Branch Dialog Component ---
+
+const NewBranchDialog = ({
+  visible,
+  loading,
+  onConfirm,
+  onCancel,
+  position,
+}: {
+  readonly visible: boolean;
+  readonly loading: boolean;
+  readonly position: { readonly x: number; readonly y: number };
+  readonly onConfirm: () => void;
+  readonly onCancel: () => void;
+}) => {
+  if (!visible) return null;
+
+  return (
+    <div
+      className="fixed z-50 rounded-xl border border-neutral-600 bg-neutral-200 px-6 py-5 shadow-xl"
+      style={{ left: position.x, top: position.y, transform: 'translate(-50%, -50%)' }}
+    >
+      <p className="mb-4 text-center text-sm text-neutral-800">あたらしいチャットに移動しますか？</p>
+      <div className="flex items-center justify-center gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-w-[70px] border-neutral-400 bg-white text-neutral-800 hover:bg-neutral-100"
+          onClick={onConfirm}
+          disabled={loading}
+        >
+          {loading ? '...' : 'Yes'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-w-[70px] border-neutral-400 bg-white text-neutral-800 hover:bg-neutral-100"
+          onClick={onCancel}
+          disabled={loading}
+        >
+          cancel
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 // --- Loading Component ---
 
 const LoadingView = () => (
@@ -652,6 +760,13 @@ export default function TreePage() {
     [chatPanelNodeId, rawNodes],
   );
 
+  const [newBranchDialog, setNewBranchDialog] = useState<{
+    readonly visible: boolean;
+    readonly nodeId: string;
+    readonly position: { readonly x: number; readonly y: number };
+  }>({ visible: false, nodeId: '', position: { x: 0, y: 0 } });
+  const [newBranchLoading, setNewBranchLoading] = useState(false);
+
   const [activeSelectedNodeId, setActiveSelectedNodeId] = useState<string | null>(null);
   const [highlightedEdgeIds, setHighlightedEdgeIds] = useState<ReadonlySet<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -659,6 +774,17 @@ export default function TreePage() {
     x: 0,
     y: 0,
     nodeId: '',
+  });
+  const [branchMenu, setBranchMenu] = useState<BranchMenuState>({
+    visible: false,
+    x: 0,
+    y: 0,
+    branchIndex: -1,
+  });
+  const [mergeState, setMergeState] = useState<MergeState>({
+    status: 'idle',
+    targetBranchIndex: null,
+    sourceBranchIndex: null,
   });
 
   // Sync selectedNodeId from data when it changes
@@ -669,7 +795,8 @@ export default function TreePage() {
   }, [selectedNodeId]);
 
   const maxColumn = gitNodes.length > 0 ? Math.max(...gitNodes.map((n) => n.column)) : 0;
-  const svgWidth = PADDING_LEFT + (maxColumn + 3) * COLUMN_GAP + BRANCH_LABEL_WIDTH;
+  const extraLabelWidth = mergeState.status !== 'idle' ? MERGE_LABEL_WIDTH + 4 : 0;
+  const svgWidth = PADDING_LEFT + (maxColumn + 3) * COLUMN_GAP + BRANCH_LABEL_WIDTH + extraLabelWidth;
   const svgHeight = PADDING_TOP * 2 + Math.max(0, gitBranches.length - 1) * ROW_GAP;
 
   const [viewBox, setViewBox] = useState<ViewBox | null>(null);
@@ -739,35 +866,48 @@ export default function TreePage() {
     fetchData();
   }, [user, conversationId, getHeaders]);
 
-  // --- Event Handlers ---
+  const refetchData = useCallback(async () => {
+    const headers = await getHeaders();
+    const [branchesRes, nodesRes] = await Promise.all([
+      fetch(`${API}/v1/conversations/${conversationId}/branches`, { headers }),
+      fetch(`${API}/v1/conversations/${conversationId}/nodes`, { headers }),
+    ]);
+    if (branchesRes.ok && nodesRes.ok) {
+      const branchesData = await branchesRes.json();
+      const nodesData = await nodesRes.json();
+      setRawBranches(branchesData.data);
+      setRawNodes(nodesData.nodes);
+    }
+  }, [conversationId, getHeaders]);
 
-  const handleEdgeClick = useCallback(
-    (edgeId: string) => {
-      const tipNodeId = findBranchTip(edgeId, allEdges, gitNodes);
-      if (!tipNodeId) return;
-      const newHighlighted = tracePathToRoot(tipNodeId, gitNodes, allEdges);
-      setHighlightedEdgeIds(newHighlighted);
-    },
-    [allEdges, gitNodes],
-  );
+  // --- Event Handlers ---
 
   const handleNodeClick = useCallback((nodeId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     setActiveSelectedNodeId(nodeId);
+    setHighlightedEdgeIds(tracePathToRoot(nodeId, gitNodes, allEdges));
     setContextMenu((prev) =>
       prev.visible && prev.nodeId === nodeId
         ? { ...prev, visible: false }
         : { visible: true, x: event.clientX, y: event.clientY, nodeId },
     );
-  }, []);
+  }, [gitNodes, allEdges]);
 
   const handleContextMenuAction = useCallback(
     (action: string, nodeId: string) => {
       if (action === 'read') {
         setChatPanelNodeId(nodeId);
-        // Highlight the path to this node
         const newHighlighted = tracePathToRoot(nodeId, gitNodes, allEdges);
         setHighlightedEdgeIds(newHighlighted);
+        return;
+      }
+      if (action === 'new branch') {
+        // Show dialog centered on screen
+        setNewBranchDialog({
+          visible: true,
+          nodeId,
+          position: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+        });
         return;
       }
       console.log(`Action: ${action}, Node: ${nodeId}`);
@@ -782,6 +922,121 @@ export default function TreePage() {
   const handleCloseChatPanel = useCallback(() => {
     setChatPanelNodeId(null);
     setHighlightedEdgeIds(new Set());
+  }, []);
+
+  const handleNewBranchConfirm = useCallback(async () => {
+    const nodeId = newBranchDialog.nodeId;
+    if (!nodeId) return;
+
+    setNewBranchLoading(true);
+    try {
+      const headers = await getHeaders();
+      const branchName = `branch-${Date.now()}`;
+
+      const createRes = await fetch(`${API}/v1/conversations/${conversationId}/branches`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ name: branchName, base_node_id: nodeId }),
+      });
+
+      if (!createRes.ok) {
+        console.error('Failed to create branch');
+        return;
+      }
+
+      const newBranch = await createRes.json();
+
+      await fetch(`${API}/v1/conversations/${conversationId}/switch`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ branch_id: newBranch.id }),
+      });
+
+      setNewBranchDialog({ visible: false, nodeId: '', position: { x: 0, y: 0 } });
+      router.push(`/conversation/${conversationId}`);
+    } catch (err) {
+      console.error('Failed to create branch:', err);
+    } finally {
+      setNewBranchLoading(false);
+    }
+  }, [newBranchDialog.nodeId, conversationId, getHeaders, router]);
+
+  const handleNewBranchCancel = useCallback(() => {
+    setNewBranchDialog({ visible: false, nodeId: '', position: { x: 0, y: 0 } });
+  }, []);
+
+  const handleBranchLabelClick = useCallback((branchIndex: number, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setBranchMenu((prev) =>
+      prev.visible && prev.branchIndex === branchIndex
+        ? { ...prev, visible: false }
+        : { visible: true, x: event.clientX, y: event.clientY, branchIndex },
+    );
+  }, []);
+
+  const handleBranchMenuAction = useCallback(
+    async (action: string, branchIndex: number) => {
+      const branch = rawBranches[branchIndex];
+      if (!branch) return;
+
+      if (action === 'merge to') {
+        setMergeState({
+          status: 'selecting-source',
+          targetBranchIndex: branchIndex,
+          sourceBranchIndex: null,
+        });
+        return;
+      }
+
+      if (action === 'merge') {
+        if (mergeState.status === 'selecting-source' && mergeState.targetBranchIndex !== null) {
+          const targetBranch = rawBranches[mergeState.targetBranchIndex];
+          if (!targetBranch || branchIndex === mergeState.targetBranchIndex) return;
+
+          setMergeState((prev) => ({
+            ...prev,
+            status: 'merging',
+            sourceBranchIndex: branchIndex,
+          }));
+
+          try {
+            const headers = await getHeaders();
+            const res = await fetch(`${API}/v1/conversations/${conversationId}/merge`, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                source_branch_id: branch.id,
+                target_branch_id: targetBranch.id,
+                summary_strategy: 'detailed',
+              }),
+            });
+
+            if (res.ok) {
+              setMergeState({ status: 'done', targetBranchIndex: null, sourceBranchIndex: null });
+              await refetchData();
+              setTimeout(() => {
+                setMergeState({ status: 'idle', targetBranchIndex: null, sourceBranchIndex: null });
+              }, 2000);
+            } else {
+              const err = await res.json();
+              console.error('Merge failed:', err);
+              setMergeState({ status: 'idle', targetBranchIndex: null, sourceBranchIndex: null });
+            }
+          } catch (err) {
+            console.error('Merge failed:', err);
+            setMergeState({ status: 'idle', targetBranchIndex: null, sourceBranchIndex: null });
+          }
+          return;
+        }
+      }
+
+      console.log(`Branch action: ${action}, Branch: ${branch.name} (${branch.id})`);
+    },
+    [rawBranches, mergeState, getHeaders, conversationId, refetchData],
+  );
+
+  const handleCloseBranchMenu = useCallback(() => {
+    setBranchMenu((prev) => ({ ...prev, visible: false }));
   }, []);
 
   const handleToggleSidebar = useCallback(() => {
@@ -886,6 +1141,7 @@ export default function TreePage() {
         onNewChat={handleNewChat}
         onSearch={handleSearch}
         onDashboard={handleDashboard}
+        onRepositories={() => router.push('/dashboard/repositories')}
       />
 
       {/* Main area */}
@@ -897,6 +1153,15 @@ export default function TreePage() {
           onSearch={handleSearch}
           onHelp={handleHelp}
         />
+
+        {/* Merge status message */}
+        {mergeState.status !== 'idle' && (
+          <div className="flex h-8 shrink-0 items-center justify-center text-sm text-amber-400">
+            {mergeState.status === 'selecting-source' && 'mergeを選択してください'}
+            {mergeState.status === 'merging' && 'merge中・・・'}
+            {mergeState.status === 'done' && 'merge完了！'}
+          </div>
+        )}
 
         {/* Tree area */}
         <div
@@ -923,7 +1188,6 @@ export default function TreePage() {
                   key={edge.id}
                   edge={edge}
                   isHighlighted={highlightedEdgeIds.has(edge.id)}
-                  onClick={handleEdgeClick}
                 />
               ))}
 
@@ -945,6 +1209,15 @@ export default function TreePage() {
                   branch={branch}
                   branchIndex={index}
                   maxColumn={maxColumn}
+                  isSelected={branchMenu.visible && branchMenu.branchIndex === index}
+                  mergeRole={
+                    mergeState.targetBranchIndex === index
+                      ? 'merge-target'
+                      : mergeState.sourceBranchIndex === index
+                        ? 'merge-source'
+                        : null
+                  }
+                  onClick={handleBranchLabelClick}
                 />
               ))}
             </svg>
@@ -955,6 +1228,13 @@ export default function TreePage() {
             state={contextMenu}
             onAction={handleContextMenuAction}
             onClose={handleCloseContextMenu}
+          />
+
+          {/* Branch Popover */}
+          <BranchPopover
+            state={branchMenu}
+            onAction={handleBranchMenuAction}
+            onClose={handleCloseBranchMenu}
           />
         </div>
 
@@ -973,6 +1253,15 @@ export default function TreePage() {
           onClose={handleCloseChatPanel}
         />
       )}
+
+      {/* New Branch Dialog */}
+      <NewBranchDialog
+        visible={newBranchDialog.visible}
+        loading={newBranchLoading}
+        position={newBranchDialog.position}
+        onConfirm={handleNewBranchConfirm}
+        onCancel={handleNewBranchCancel}
+      />
     </div>
   );
 }
