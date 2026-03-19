@@ -6,14 +6,17 @@ const parseDatabaseUrl = () => {
   // Cloud SQL Unix socket format: postgresql://user:pass@/dbname?host=/cloudsql/...
   const hostMatch = url.match(/[?&]host=([^&]+)/);
   if (hostMatch) {
-    const baseUrl = url.replace(/[?&]host=[^&]+/, '');
-    const parsed = new URL(baseUrl.replace(/^postgresql:/, 'http:'));
+    // Extract user:password from URL (before @)
+    const authMatch = url.match(/\/\/([^:]+):([^@]+)@/);
+    // Extract database name (between @ and ?)
+    const dbMatch = url.match(/@\/([^?]+)/);
+
     return {
       host: hostMatch[1],
       port: 5432,
-      database: parsed.pathname.slice(1) || 'gitalk',
-      user: parsed.username || 'app',
-      password: parsed.password || '',
+      database: dbMatch?.[1] || 'gitalk',
+      user: authMatch?.[1] || 'app',
+      password: authMatch?.[2] || '',
     };
   }
 
