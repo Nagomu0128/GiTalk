@@ -90,6 +90,8 @@ export const branches = pgTable(
     headNodeId: uuid('head_node_id'),
     baseNodeId: uuid('base_node_id'),
     isDefault: boolean('is_default').notNull().default(false),
+    cacheName: varchar('cache_name', { length: 500 }),
+    cacheCreatedAt: timestamp('cache_created_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

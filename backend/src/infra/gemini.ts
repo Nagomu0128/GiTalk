@@ -1,4 +1,4 @@
-import { VertexAI, type Content, type StreamGenerateContentResult } from '@google-cloud/vertexai';
+import { GoogleGenAI, type Content, type GenerateContentResponse } from '@google/genai';
 import { ResultAsync } from 'neverthrow';
 import { errorBuilder, type InferError } from '../shared/error.js';
 import { appLogger } from '../shared/logger.js';
@@ -21,22 +21,33 @@ const getProjectId = (): string => process.env.GCP_PROJECT_ID || 'gitalk-0110012
 const getLocation = (): string => process.env.GCP_LOCATION || 'us-central1';
 const getDefaultModel = (): string => process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
-const getClient = (): VertexAI =>
-  new VertexAI({ project: getProjectId(), location: getLocation() });
+const CACHE_TTL_SECONDS = 3600;
+const CACHE_MIN_TOKENS = 32768;
+
+const getClient = (): GoogleGenAI =>
+  new GoogleGenAI({
+    vertexai: true,
+    project: getProjectId(),
+    location: getLocation(),
+  });
+
+// ============================================================
+// Standard (non-cached) API
+// ============================================================
 
 export const generateContentStream = (
   contents: ReadonlyArray<Content>,
   model?: string,
-): ResultAsync<StreamGenerateContentResult, GeminiError> =>
+): ResultAsync<AsyncGenerator<GenerateContentResponse>, GeminiError> =>
   ResultAsync.fromPromise(
     (async () => {
-      const client = getClient();
+      const ai = getClient();
       const resolvedModel = model ?? getDefaultModel();
-      const generativeModel = client.getGenerativeModel({ model: resolvedModel });
 
       logger.info('Starting stream', { model: resolvedModel, contentsLength: contents.length });
 
-      return generativeModel.generateContentStream({
+      return ai.models.generateContentStream({
+        model: resolvedModel,
         contents: contents as Content[],
       });
     })(),
@@ -49,16 +60,15 @@ export const generateContent = (
 ): ResultAsync<string, GeminiError> =>
   ResultAsync.fromPromise(
     (async () => {
-      const client = getClient();
+      const ai = getClient();
       const resolvedModel = model ?? getDefaultModel();
-      const generativeModel = client.getGenerativeModel({ model: resolvedModel });
 
-      const result = await generativeModel.generateContent({
+      const response = await ai.models.generateContent({
+        model: resolvedModel,
         contents: contents as Content[],
       });
 
-      const response = result.response;
-      return response.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      return response.text ?? '';
     })(),
     GeminiError.handle,
   );
@@ -69,19 +79,94 @@ export const generateContentWithMetadata = (
 ): ResultAsync<{ text: string; tokenCount: number }, GeminiError> =>
   ResultAsync.fromPromise(
     (async () => {
-      const client = getClient();
+      const ai = getClient();
       const resolvedModel = model ?? getDefaultModel();
-      const generativeModel = client.getGenerativeModel({ model: resolvedModel });
 
-      const result = await generativeModel.generateContent({
+      const response = await ai.models.generateContent({
+        model: resolvedModel,
         contents: contents as Content[],
       });
 
-      const response = result.response;
       return {
-        text: response.candidates?.[0]?.content?.parts?.[0]?.text ?? '',
+        text: response.text ?? '',
         tokenCount: response.usageMetadata?.totalTokenCount ?? 0,
       };
+    })(),
+    GeminiError.handle,
+  );
+
+// ============================================================
+// Context Caching API
+// ============================================================
+
+export const shouldUseCache = (totalTokens: number): boolean =>
+  totalTokens >= CACHE_MIN_TOKENS;
+
+export const isCacheValid = (cacheCreatedAt: Date | null): boolean => {
+  if (!cacheCreatedAt) return false;
+  const ageMs = Date.now() - cacheCreatedAt.getTime();
+  return ageMs < CACHE_TTL_SECONDS * 1000;
+};
+
+export const createContextCache = (
+  contents: ReadonlyArray<Content>,
+  model?: string,
+): ResultAsync<string, GeminiError> =>
+  ResultAsync.fromPromise(
+    (async () => {
+      const ai = getClient();
+      const resolvedModel = model ?? getDefaultModel();
+
+      logger.info('Creating context cache', { model: resolvedModel, contentsLength: contents.length });
+
+      const cached = await ai.caches.create({
+        model: resolvedModel,
+        config: {
+          contents: contents as Content[],
+          ttl: `${CACHE_TTL_SECONDS}s`,
+        },
+      });
+
+      const cacheName = cached.name;
+      if (!cacheName) {
+        throw new Error('Cache creation returned no name');
+      }
+
+      logger.info('Context cache created', { cacheName });
+      return cacheName;
+    })(),
+    GeminiError.handle,
+  );
+
+export const generateContentStreamWithCache = (
+  cacheName: string,
+  contents: ReadonlyArray<Content>,
+  model?: string,
+): ResultAsync<AsyncGenerator<GenerateContentResponse>, GeminiError> =>
+  ResultAsync.fromPromise(
+    (async () => {
+      const ai = getClient();
+      const resolvedModel = model ?? getDefaultModel();
+
+      logger.info('Starting cached stream', { cacheName, contentsLength: contents.length });
+
+      return ai.models.generateContentStream({
+        model: resolvedModel,
+        contents: contents as Content[],
+        config: { cachedContent: cacheName },
+      });
+    })(),
+    GeminiError.handle,
+  );
+
+export const deleteContextCache = (
+  cacheName: string,
+): ResultAsync<void, GeminiError> =>
+  ResultAsync.fromPromise(
+    (async () => {
+      const ai = getClient();
+      await ai.caches.delete({ name: cacheName });
+      logger.info('Context cache deleted', { cacheName });
     })(),
     GeminiError.handle,
   );

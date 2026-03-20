@@ -1,8 +1,8 @@
 import type { Content } from '../infra/gemini.js';
-import { findBranchById, updateBranchHead } from '../infra/branch.js';
+import { findBranchById, updateBranchHead, updateBranchCache } from '../infra/branch.js';
 import { findNodeById, getPathToRoot, createNode, type NodeRecord } from '../infra/node.js';
 import { updateConversation } from '../infra/conversation.js';
-import { generateContentWithMetadata } from '../infra/gemini.js';
+import { generateContentWithMetadata, deleteContextCache } from '../infra/gemini.js';
 import { findLCA } from '../domain/lca.js';
 import { errorBuilder, type InferError } from '../shared/error.js';
 import { appLogger } from '../shared/logger.js';
@@ -11,6 +11,25 @@ const logger = appLogger('gitOperationsService');
 
 export const GitOperationError = errorBuilder('GitOperationError');
 export type GitOperationError = InferError<typeof GitOperationError>;
+
+// ============================================================
+// Cache Invalidation
+// ============================================================
+const invalidateBranchCache = async (branchId: string, cacheName: string | null): Promise<void> => {
+  if (!cacheName) return;
+
+  logger.info('Invalidating branch cache', { branchId, cacheName });
+
+  await deleteContextCache(cacheName).match(
+    () => logger.info('Context cache deleted', { cacheName }),
+    (err) => logger.warn('Failed to delete context cache (may have expired)', { error: err.message }),
+  );
+
+  await updateBranchCache(branchId, null).match(
+    () => logger.info('Branch cache cleared in DB', { branchId }),
+    (err) => logger.warn('Failed to clear branch cache in DB', { error: err.message }),
+  );
+};
 
 // ============================================================
 // Switch
@@ -78,6 +97,9 @@ export const resetBranch = async (
   if (updateResult.isErr() || !updateResult.value) {
     return { ok: false, code: 'CONFLICT', message: 'Branch was modified concurrently', status: 409 };
   }
+
+  // キャッシュ無効化（コンテキストが変わるため）
+  await invalidateBranchCache(branchId, branch.cacheName);
 
   return { ok: true, data: { branchId, headNodeId: targetNodeId } };
 };
@@ -252,6 +274,9 @@ export const mergeBranches = async (
     return { ok: false, code: 'CONFLICT', message: 'Target branch was modified concurrently', status: 409 };
   }
 
+  // ターゲットブランチのキャッシュ無効化（コンテキストが変わるため）
+  await invalidateBranchCache(targetBranchId, targetBranch.cacheName);
+
   return {
     ok: true,
     data: {
@@ -312,6 +337,9 @@ export const cherryPickNode = async (
   if (headResult.isErr() || !headResult.value) {
     return { ok: false, code: 'CONFLICT', message: 'Target branch was modified concurrently', status: 409 };
   }
+
+  // ターゲットブランチのキャッシュ無効化（コンテキストが変わるため）
+  await invalidateBranchCache(targetBranchId, targetBranch.cacheName);
 
   return {
     ok: true,

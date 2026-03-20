@@ -10,11 +10,12 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "@google-cloud/vertexai": "^1.10.0",
-    "@google/generative-ai": "^0.24.1",
+    "@google/genai": "^1.46.0",
     "@hono/node-server": "^1.19.11",
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
@@ -37,6 +38,7 @@
     "globals": "^17.4.0",
     "prettier": "^3.8.1",
     "tsx": "^4.7.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.0"
   }
 }
