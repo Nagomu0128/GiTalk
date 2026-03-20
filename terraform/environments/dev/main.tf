@@ -143,7 +143,7 @@ module "cloud_run_backend" {
     { name = "GCS_BUCKET", value = module.cloud_storage.bucket_name },
     { name = "FIREBASE_PROJECT_ID", value = var.firebase_project_id },
     { name = "GCP_PROJECT_ID", value = var.project_id },
-    { name = "GEMINI_MODEL", value = "gemini-1.5-flash" },
+    { name = "GEMINI_MODEL", value = "gemini-2.5-flash" },
   ]
 
   secret_env_vars = [
