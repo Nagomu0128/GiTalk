@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { GitBranch } from 'lucide-react';
 import { useConversationStore, type Branch, type ConversationNode } from '@/stores/conversation-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { DiffHeader } from './diff-header';
@@ -64,8 +65,45 @@ export function DiffView({ conversationId, onClose, branches: branchesProp, init
           <DiffBranchPanel branchName={diffData.branch_b.name} nodes={diffData.branch_b.nodes} />
         </div>
       ) : (
-        <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-neutral-500">ブランチを選択して比較してください</p>
+        <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-1 flex-col items-center justify-center gap-4">
+            <GitBranch size={36} className="text-neutral-300 dark:text-neutral-700" />
+            <p className="text-sm text-neutral-400 dark:text-neutral-600">比較元のブランチ</p>
+            <select
+              value={branchAId}
+              onChange={(e) => setBranchAId(e.target.value)}
+              className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-700 outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+            >
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="relative w-px shrink-0 bg-neutral-200 dark:bg-neutral-700">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <button
+                onClick={fetchDiff}
+                disabled={!branchBId || loading}
+                className="whitespace-nowrap rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-neutral-900 transition-colors hover:bg-amber-400 disabled:opacity-50"
+              >
+                {loading ? '比較中...' : '比較する'}
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-1 flex-col items-center justify-center gap-4">
+            <GitBranch size={36} className="text-neutral-300 dark:text-neutral-700" />
+            <p className="text-sm text-neutral-400 dark:text-neutral-600">比較先のブランチを選択してください</p>
+            <select
+              value={branchBId}
+              onChange={(e) => setBranchBId(e.target.value)}
+              className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-700 outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+            >
+              <option value="">ブランチを選択...</option>
+              {branches.filter((b) => b.id !== branchAId).map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
     </div>
