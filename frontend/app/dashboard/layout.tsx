@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [user, router]);
 
   return (
-    <div className="flex h-screen w-full bg-neutral-900">
+    <div className="flex h-screen w-full bg-neutral-50 dark:bg-neutral-900">
       <AppSidebar
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed((prev) => !prev)}

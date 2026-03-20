@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { MoreVertical, ChevronDown } from 'lucide-react';
+import { ThemedLogo } from '@/components/themed-logo';
 import { useAuthStore } from '@/stores/auth-store';
 import { ConversationCard } from '@/components/cards/conversation-card';
 import { SaveToRepoDialog } from '@/components/dialogs/save-to-repo-dialog';
@@ -94,14 +94,14 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col">
       {/* Header */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-700 px-6">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 px-6 dark:border-neutral-700">
         <div className="flex items-center gap-3">
-          <Image src="/dark_mode_logo.png" alt="GiTalk" width={44} height={44} />
-          <h1 className="text-lg font-bold text-neutral-200">会話一覧</h1>
+          <ThemedLogo />
+          <h1 className="text-lg font-bold text-neutral-800 dark:text-neutral-200">会話一覧</h1>
         </div>
         <button
           onClick={handleNewConversation}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
         >
           <MoreVertical size={16} />
         </button>
@@ -134,7 +134,7 @@ export default function DashboardPage() {
               onClick={handleLoadMore}
               className="flex flex-col items-center gap-1 text-sm text-neutral-400 transition-colors hover:text-neutral-200"
             >
-              <span>もっと見る</span>
+              <span className="text-neutral-500 dark:text-neutral-400">もっと見る</span>
               <ChevronDown size={18} />
             </button>
           </div>

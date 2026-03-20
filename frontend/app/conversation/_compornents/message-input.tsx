@@ -42,7 +42,7 @@ export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
         {/* Model selector */}
         <div className="mb-2 flex items-center gap-1.5 px-1">
           <Popover>
-            <PopoverTrigger className="flex items-center gap-1 rounded-full border border-neutral-600 bg-neutral-800 px-3 py-1 text-xs text-neutral-300 transition-colors hover:border-neutral-500 hover:bg-neutral-750 hover:text-neutral-200">
+            <PopoverTrigger className="flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-3 py-1 text-xs text-neutral-600 transition-colors hover:border-neutral-400 hover:text-neutral-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-neutral-200">
               <Sparkles size={12} />
               <span>{currentModel.label}</span>
               <ChevronDown size={12} />
@@ -51,19 +51,19 @@ export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
               side="top"
               align="start"
               sideOffset={6}
-              className="!w-48 border-neutral-600 bg-neutral-800 p-1"
+              className="!w-48 border-neutral-200 bg-white p-1 dark:border-neutral-600 dark:bg-neutral-800"
             >
               {MODELS.map((m) => (
                 <button
                   key={m.value}
                   onClick={() => setModel(m.value)}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors hover:bg-neutral-700"
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-700"
                 >
                   <div>
-                    <p className="text-sm text-neutral-200">{m.label}</p>
+                    <p className="text-sm text-neutral-800 dark:text-neutral-200">{m.label}</p>
                     <p className="text-xs text-neutral-500">{m.description}</p>
                   </div>
-                  {model === m.value && <Check size={14} className="shrink-0 text-blue-400" />}
+                  {model === m.value && <Check size={14} className="shrink-0 text-blue-500" />}
                 </button>
               ))}
             </PopoverContent>
@@ -71,7 +71,7 @@ export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
         </div>
 
         {/* Input bar */}
-        <div className="flex items-center gap-2 rounded-2xl border border-neutral-600 bg-neutral-800 px-4 py-3">
+        <div className="flex items-center gap-2 rounded-2xl border border-neutral-300 bg-white px-4 py-3 dark:border-neutral-600 dark:bg-neutral-800">
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -79,7 +79,7 @@ export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
             placeholder={disabled ? '送信中...' : 'メッセージを入力...'}
             disabled={disabled}
             rows={1}
-            className="max-h-32 min-h-[24px] flex-1 resize-none bg-transparent text-sm leading-6 text-neutral-200 placeholder-neutral-500 outline-none disabled:opacity-50"
+            className="max-h-32 min-h-[24px] flex-1 resize-none bg-transparent text-sm leading-6 text-neutral-800 placeholder-neutral-400 outline-none disabled:opacity-50 dark:text-neutral-200 dark:placeholder-neutral-500"
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
               target.style.height = 'auto';
@@ -89,7 +89,7 @@ export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
           <button
             onClick={handleSubmit}
             disabled={disabled || !message.trim()}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-neutral-900 transition-colors hover:bg-white disabled:bg-neutral-600 disabled:text-neutral-400"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-white transition-colors hover:bg-neutral-700 disabled:bg-neutral-300 disabled:text-neutral-500 dark:bg-neutral-200 dark:text-neutral-900 dark:hover:bg-white dark:disabled:bg-neutral-600 dark:disabled:text-neutral-400"
           >
             <ArrowUp size={18} />
           </button>
