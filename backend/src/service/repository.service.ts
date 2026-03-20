@@ -1,4 +1,4 @@
-import { listBranchesByConversation } from '../infra/branch.js';
+import { listBranchesByConversation, updateBranchHead } from '../infra/branch.js';
 import { createNode, getPathToRoot } from '../infra/node.js';
 import { createBranch } from '../infra/branch.js';
 import { createConversation } from '../infra/conversation.js';
@@ -126,6 +126,7 @@ export const pushBranches = async (
 export const cloneRepository = async (
   repositoryId: string,
   userId: string,
+  branchIds?: ReadonlyArray<string>,
 ): Promise<
   | { ok: true; data: { conversationId: string; title: string } }
   | { ok: false; code: string; message: string; status: number }
@@ -148,6 +149,17 @@ export const cloneRepository = async (
     return { ok: false, code: 'INTERNAL_ERROR', message: 'Failed to list branches', status: 500 };
   }
 
+  const allRepoBranches = repoBranchesResult.value;
+
+  // ブランチ選択（branchIds 指定がなければ全ブランチ）
+  const targetBranches = (!branchIds || branchIds.length === 0)
+    ? allRepoBranches
+    : allRepoBranches.filter((b) => branchIds.includes(b.id));
+
+  if (targetBranches.length === 0) {
+    return { ok: false, code: 'BAD_REQUEST', message: 'No branches to clone', status: 400 };
+  }
+
   // 新 Conversation 作成
   const convResult = await createConversation({
     ownerId: userId,
@@ -158,20 +170,20 @@ export const cloneRepository = async (
   }
 
   const conversationId = convResult.value.conversation.id;
-  const repoBranches = repoBranchesResult.value;
+  const defaultBranchId = convResult.value.branch.id;
+
+  // 全ブランチを横断する nodeIdMap（共有ノードの重複作成を防止）
+  const globalNodeIdMap = new Map<string, string>();
 
   // 各 RepositoryBranch を Branch + Node にコピー
-  for (const repoBranch of repoBranches) {
+  for (const [idx, repoBranch] of targetBranches.entries()) {
     const repoNodesResult = await listRepositoryNodes(repoBranch.id);
     if (repoNodesResult.isErr()) continue;
 
     const repoNodes = repoNodesResult.value;
     if (repoNodes.length === 0) continue;
 
-    // RepositoryNode → Node にコピー（parent_id のマッピング）
-    const nodeIdMap = new Map<string, string>();
-
-    // ノードを親子順にソート（parentRepositoryNodeId が null のものが先）
+    // ノードを親子順にソート
     const sortedNodes = [...repoNodes].sort((a, b) => {
       if (!a.parentRepositoryNodeId) return -1;
       if (!b.parentRepositoryNodeId) return 1;
@@ -179,15 +191,20 @@ export const cloneRepository = async (
     });
 
     // ブランチ作成（最初のブランチは main として既に作成済み）
-    const isFirst = repoBranch === repoBranches[0];
+    const isFirst = idx === 0;
     const branchId = isFirst
-      ? convResult.value.branch.id
+      ? defaultBranchId
       : await (async () => {
-          const firstNodeId = nodeIdMap.values().next().value;
+          // base_node_id は最初のノードの親（既に作成済みのはず）
+          const firstNode = sortedNodes[0];
+          const baseNodeId = firstNode?.parentRepositoryNodeId
+            ? globalNodeIdMap.get(firstNode.parentRepositoryNodeId) ?? ''
+            : globalNodeIdMap.values().next().value ?? '';
+          if (!baseNodeId) return '';
           const brResult = await createBranch({
             conversationId,
             name: repoBranch.name,
-            baseNodeId: firstNodeId ?? convResult.value.branch.headNodeId ?? '',
+            baseNodeId,
           });
           return brResult.isOk() ? brResult.value.id : '';
         })();
@@ -195,11 +212,22 @@ export const cloneRepository = async (
     if (!branchId) continue;
 
     // ノードを順に作成
+    let lastNodeId: string | null = null;
     for (const repoNode of sortedNodes) {
+      // 既に別ブランチで作成済みのノードはスキップ
+      if (globalNodeIdMap.has(repoNode.id)) {
+        lastNodeId = globalNodeIdMap.get(repoNode.id)!;
+        continue;
+      }
+
+      const parentId = repoNode.parentRepositoryNodeId
+        ? globalNodeIdMap.get(repoNode.parentRepositoryNodeId) ?? null
+        : null;
+
       const nodeResult = await createNode({
         conversationId,
         branchId,
-        parentId: repoNode.parentRepositoryNodeId ? nodeIdMap.get(repoNode.parentRepositoryNodeId) ?? null : null,
+        parentId,
         nodeType: repoNode.nodeType as 'message' | 'summary' | 'system',
         userMessage: repoNode.userMessage,
         aiResponse: repoNode.aiResponse,
@@ -210,8 +238,14 @@ export const cloneRepository = async (
       });
 
       if (nodeResult.isOk()) {
-        nodeIdMap.set(repoNode.id, nodeResult.value.id);
+        globalNodeIdMap.set(repoNode.id, nodeResult.value.id);
+        lastNodeId = nodeResult.value.id;
       }
+    }
+
+    // ブランチの head_node_id を更新
+    if (lastNodeId) {
+      await updateBranchHead(branchId, lastNodeId, null);
     }
   }
 
