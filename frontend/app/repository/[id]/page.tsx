@@ -152,21 +152,21 @@ export default function RepositoryDetailPage() {
   const [cloneLoading, setCloneLoading] = useState(false);
 
   // Init clone branch selection with all branches
-  const openCloneDialog = useCallback(() => {
+  const openCloneDialog = () => {
     setCloneSelectedBranches(new Set(branches.map((b) => b.repository_branch_id)));
     setCloneDialog(true);
-  }, [branches]);
+  };
 
-  const toggleCloneBranch = useCallback((branchId: string) => {
+  const toggleCloneBranch = (branchId: string) => {
     setCloneSelectedBranches((prev) => {
       const next = new Set(prev);
       if (next.has(branchId)) next.delete(branchId);
       else next.add(branchId);
       return next;
     });
-  }, []);
+  };
 
-  const handleCloneConfirm = useCallback(async () => {
+  const handleCloneConfirm = async () => {
     setCloneLoading(true);
     const token = await user?.getIdToken();
     const res = await fetch(`${API}/v1/repositories/${repoId}/clone`, {
@@ -180,7 +180,7 @@ export default function RepositoryDetailPage() {
       setCloneDialog(false);
       router.push(`/conversation/${data.conversationId}`);
     }
-  }, [user, repoId, cloneSelectedBranches, router]);
+  };
 
   if (loading) {
     return (
