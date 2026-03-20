@@ -1,6 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { GitBranch } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 type CreateBranchDialogProps = {
   readonly onSubmit: (name: string) => void;
@@ -11,56 +20,61 @@ export function CreateBranchDialog({ onSubmit, onClose }: CreateBranchDialogProp
   const [name, setName] = useState('');
   const [error, setError] = useState('');
 
-  const validate = (value: string): boolean => {
-    if (!value) { setError('ブランチ名を入力してください'); return false; }
-    if (!/^[a-zA-Z0-9_-]+$/.test(value)) { setError('英数字・ハイフン・アンダースコアのみ使用できます'); return false; }
+  const validate = useCallback((value: string): boolean => {
+    if (!value.trim()) { setError('ブランチ名を入力してください'); return false; }
+    if (/^\s+$/.test(value)) { setError('空白のみのブランチ名は使用できません'); return false; }
     if (value.length > 100) { setError('100文字以内で入力してください'); return false; }
     setError('');
     return true;
-  };
+  }, []);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (validate(name)) onSubmit(name);
-  };
+  }, [name, validate, onSubmit]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">🌿 新しい分岐を作成</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
-        </div>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="!max-w-md border-neutral-600 bg-neutral-800 text-neutral-100 shadow-2xl shadow-black/60">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-neutral-100">
+            <GitBranch size={18} />
+            新しいブランチを作成
+          </DialogTitle>
+          <DialogDescription className="text-neutral-400">
+            選択したノードから新しい分岐を作成します
+          </DialogDescription>
+        </DialogHeader>
 
-        <p className="mb-4 text-xs text-gray-500">ここから別の話題を探索します</p>
-
-        <div className="mb-4">
-          <label className="mb-1 block text-sm font-medium text-gray-700">ブランチ名</label>
-          <input
-            type="text"
+        <div className="mt-2 space-y-2">
+          <label className="block text-sm font-medium text-neutral-300">ブランチ名</label>
+          <Input
             value={name}
             onChange={(e) => { setName(e.target.value); setError(''); }}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleSubmit(); }}
             placeholder="例: pricing-discussion"
             autoFocus
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            className="border-neutral-600 bg-neutral-700 text-neutral-100 placeholder:text-neutral-500 focus-visible:border-blue-500 focus-visible:ring-blue-500/30"
           />
-          {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
-          <p className="mt-1 text-xs text-gray-400">英数字・ハイフン・アンダースコアのみ</p>
+          {error && <p className="text-xs text-red-400">{error}</p>}
+          <p className="text-xs text-neutral-500">100文字以内で入力してください</p>
         </div>
 
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100">
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="rounded-lg px-4 py-2 text-sm text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-neutral-200"
+          >
             キャンセル
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!name}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+            disabled={!name.trim()}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
           >
             作成
           </button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

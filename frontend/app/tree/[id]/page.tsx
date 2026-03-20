@@ -26,6 +26,7 @@ import { ChatPanel } from '../_components/chat-panel';
 import { NodeContextMenuPopover } from '../_components/context-menu';
 import { BranchPopover } from '../_components/branch-menu';
 import { NewBranchDialog } from '../_components/new-branch-dialog';
+import { RenameBranchDialog } from '../_components/rename-branch-dialog';
 import { CherryPickConfirmDialog } from '../_components/cherry-pick-dialog';
 import { TreeFlowInner } from '../_components/tree-flow';
 import { DiffView } from '@/app/conversation/_compornents/diff-view';
@@ -81,6 +82,8 @@ export default function TreePage() {
   const [newBranchLoading, setNewBranchLoading] = useState(false);
 
   const [cherryPickConfirm, setCherryPickConfirm] = useState<{ visible: boolean; nodeId: string }>({ visible: false, nodeId: '' });
+  const [renameDialog, setRenameDialog] = useState<{ visible: boolean; branchId: string; currentName: string }>({ visible: false, branchId: '', currentName: '' });
+  const [renameLoading, setRenameLoading] = useState(false);
   const [activeSelectedNodeId, setActiveSelectedNodeId] = useState<string | null>(null);
   const [highlightedEdgeIds, setHighlightedEdgeIds] = useState<ReadonlySet<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -288,13 +291,12 @@ export default function TreePage() {
     setHighlightedEdgeIds(new Set());
   }, []);
 
-  const handleNewBranchConfirm = useCallback(async () => {
+  const handleNewBranchConfirm = useCallback(async (branchName: string) => {
     const nodeId = newBranchDialog.nodeId;
     if (!nodeId) return;
     setNewBranchLoading(true);
     try {
       const headers = await getHeaders();
-      const branchName = `branch-${Date.now()}`;
       const createRes = await fetch(`${API}/v1/conversations/${conversationId}/branches`, {
         method: 'POST', headers,
         body: JSON.stringify({ name: branchName, base_node_id: nodeId }),
@@ -315,6 +317,23 @@ export default function TreePage() {
     setNewBranchDialog({ visible: false, nodeId: '', position: { x: 0, y: 0 } });
   }, []);
 
+  const handleRenameConfirm = useCallback(async (newName: string) => {
+    if (!renameDialog.branchId) return;
+    setRenameLoading(true);
+    try {
+      const headers = await getHeaders();
+      const res = await fetch(`${API}/v1/conversations/${conversationId}/branches/${renameDialog.branchId}`, {
+        method: 'PATCH', headers,
+        body: JSON.stringify({ name: newName }),
+      });
+      if (res.ok) {
+        setRawBranches((prev) => prev.map((b) => b.id === renameDialog.branchId ? { ...b, name: newName } : b));
+        setRenameDialog({ visible: false, branchId: '', currentName: '' });
+      }
+    } catch (err) { console.error('Failed to rename branch:', err); }
+    finally { setRenameLoading(false); }
+  }, [renameDialog.branchId, conversationId, getHeaders]);
+
   const handleBranchLabelClick = useCallback((branchIndex: number, event: React.MouseEvent) => {
     event.stopPropagation();
     setBranchMenu((prev) =>
@@ -328,6 +347,11 @@ export default function TreePage() {
     async (action: string, branchIndex: number) => {
       const branch = rawBranches[branchIndex];
       if (!branch) return;
+
+      if (action === 'rename') {
+        setRenameDialog({ visible: true, branchId: branch.id, currentName: branch.name });
+        return;
+      }
 
       if (action === 'diff') {
         setDiffView({ visible: true, branchId: branch.id });
@@ -490,7 +514,6 @@ export default function TreePage() {
       <NewBranchDialog
         visible={newBranchDialog.visible}
         loading={newBranchLoading}
-        position={newBranchDialog.position}
         onConfirm={handleNewBranchConfirm}
         onCancel={handleNewBranchCancel}
       />
@@ -509,6 +532,14 @@ export default function TreePage() {
           onClose={() => setDiffView({ visible: false, branchId: '' })}
         />
       )}
+
+      <RenameBranchDialog
+        open={renameDialog.visible}
+        currentName={renameDialog.currentName}
+        loading={renameLoading}
+        onSubmit={handleRenameConfirm}
+        onClose={() => setRenameDialog({ visible: false, branchId: '', currentName: '' })}
+      />
     </div>
   );
 }

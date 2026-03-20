@@ -8,12 +8,12 @@ import { appLogger } from '../shared/logger.js';
 const logger = appLogger('branchesRoute');
 
 const createSchema = z.object({
-  name: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/),
+  name: z.string().min(1).max(100),
   base_node_id: z.string().uuid(),
 });
 
 const updateSchema = z.object({
-  name: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/).optional(),
+  name: z.string().min(1).max(100).optional(),
 });
 
 export const branchesRouter = new Hono();
