@@ -99,3 +99,21 @@ export const deleteBranch = (
       .then((rows) => rows[0]),
     DBBranchError.handle,
   );
+
+export const updateBranchCache = (
+  branchId: string,
+  cacheName: string | null,
+): ResultAsync<BranchRecord | undefined, DBBranchError> =>
+  ResultAsync.fromPromise(
+    db
+      .update(branches)
+      .set({
+        cacheName,
+        cacheCreatedAt: cacheName ? new Date() : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(branches.id, branchId))
+      .returning()
+      .then((rows) => rows[0]),
+    DBBranchError.handle,
+  );

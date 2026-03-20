@@ -1,8 +1,16 @@
 import type { Content } from '../infra/gemini.js';
 import { getPathToRoot, createNode } from '../infra/node.js';
-import { findBranchById, updateBranchHead } from '../infra/branch.js';
+import { findBranchById, updateBranchHead, updateBranchCache } from '../infra/branch.js';
 import { updateConversation } from '../infra/conversation.js';
-import { generateContentStream, generateContent, isValidModel } from '../infra/gemini.js';
+import {
+  generateContentStream,
+  generateContentStreamWithCache,
+  generateContent,
+  createContextCache,
+  shouldUseCache,
+  isCacheValid,
+  isValidModel,
+} from '../infra/gemini.js';
 import { buildContextContents } from '../domain/context-builder.js';
 import { errorBuilder, type InferError } from '../shared/error.js';
 import { appLogger } from '../shared/logger.js';
@@ -66,14 +74,23 @@ export const processChat = async (
       )
     : [];
 
-  // 新しいメッセージを追加
-  const contents: Content[] = [
-    ...contextContents,
-    { role: 'user' as const, parts: [{ text: params.message }] },
-  ];
+  // コンテキストのトークン数を推定（各Contentのテキスト文字数から概算）
+  const estimatedContextTokens = contextContents.reduce(
+    (sum, c) => sum + (c.parts ?? []).reduce((s, p) => s + ('text' in p ? (p.text?.length ?? 0) : 0), 0) / 4,
+    0,
+  );
 
-  // Gemini API ストリーミング呼出
-  const streamResult = await generateContentStream(contents, params.model);
+  // 新しいメッセージ（キャッシュには含めない — ユーザーの最新メッセージのみ非キャッシュ）
+  const userContent: Content = { role: 'user' as const, parts: [{ text: params.message }] };
+
+  // キャッシング判定 & Gemini API ストリーミング呼出
+  const streamResult = await resolveStream(
+    branch,
+    contextContents,
+    userContent,
+    estimatedContextTokens,
+    params.model,
+  );
 
   if (streamResult.isErr()) {
     logger.error('Gemini stream failed', { error: streamResult.error.message });
@@ -85,19 +102,20 @@ export const processChat = async (
   const chunks: string[] = [];
 
   try {
-    const responseStream = stream.stream;
+    let tokenCount = 0;
 
-    for await (const chunk of responseStream) {
-      const text = chunk.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    for await (const chunk of stream) {
+      const text = chunk.text ?? '';
       if (text) {
         chunks.push(text);
         await callbacks.onChunk(text);
       }
+      // 最後のチャンクに usageMetadata が含まれる
+      if (chunk.usageMetadata?.totalTokenCount) {
+        tokenCount = chunk.usageMetadata.totalTokenCount;
+      }
     }
 
-    // ストリーミング完了 → 集約レスポンスからトークン数を取得
-    const aggregatedResponse = await stream.response;
-    const tokenCount = aggregatedResponse.usageMetadata?.totalTokenCount ?? 0;
     const aiResponse = sanitizeAiResponse(chunks.join(''));
 
     // ノード保存
@@ -145,6 +163,56 @@ export const processChat = async (
     logger.error('Stream interrupted', { error });
     await callbacks.onError('STREAM_INTERRUPTED', 'Streaming was interrupted');
   }
+};
+
+// ============================================================
+// キャッシング判定 → ストリーム取得
+// ============================================================
+
+type BranchLike = {
+  readonly id: string;
+  readonly cacheName: string | null;
+  readonly cacheCreatedAt: Date | null;
+};
+
+const resolveStream = async (
+  branch: BranchLike,
+  contextContents: ReadonlyArray<Content>,
+  userContent: Content,
+  estimatedContextTokens: number,
+  model: string,
+) => {
+  // 1. 既存の有効なキャッシュがある場合 → キャッシュ付きストリーム
+  if (branch.cacheName && isCacheValid(branch.cacheCreatedAt)) {
+    logger.info('Using existing cache', { cacheName: branch.cacheName, branchId: branch.id });
+    return generateContentStreamWithCache(branch.cacheName, [userContent], model);
+  }
+
+  // 2. コンテキストが十分大きい場合 → 新規キャッシュ作成してからストリーム
+  if (shouldUseCache(estimatedContextTokens) && contextContents.length > 0) {
+    logger.info('Creating new context cache', { estimatedTokens: estimatedContextTokens, branchId: branch.id });
+
+    const cacheResult = await createContextCache(contextContents as Content[], model);
+
+    if (cacheResult.isOk()) {
+      const cacheName = cacheResult.value;
+      // DB にキャッシュ名を保存（失敗してもストリームは続行）
+      await updateBranchCache(branch.id, cacheName).match(
+        () => logger.info('Branch cache saved', { branchId: branch.id, cacheName }),
+        (err) => logger.warn('Failed to save branch cache', { error: err.message }),
+      );
+
+      return generateContentStreamWithCache(cacheName, [userContent], model);
+    }
+
+    // キャッシュ作成失敗 → フォールバックで通常ストリーム
+    logger.warn('Cache creation failed, falling back to standard stream', {
+      error: cacheResult.error.message,
+    });
+  }
+
+  // 3. 通常のストリーム
+  return generateContentStream([...contextContents, userContent] as Content[], model);
 };
 
 const generateTitle = async (
