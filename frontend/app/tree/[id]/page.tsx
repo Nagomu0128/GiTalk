@@ -60,7 +60,7 @@ export default function TreePage() {
   const [rawBranches, setRawBranches] = useState<ReadonlyArray<Branch>>([]);
   const [rawNodes, setRawNodes] = useState<ReadonlyArray<ConversationNode>>([]);
 
-  const gitBranches = useMemo(() => convertBranches(rawBranches), [rawBranches]);
+  const gitBranches = useMemo(() => convertBranches(rawBranches, conversation?.activeBranchId ?? null), [rawBranches, conversation?.activeBranchId]);
   const gitNodes = useMemo(() => convertNodes(rawNodes, rawBranches), [rawNodes, rawBranches]);
   const selectedNodeId = useMemo(
     () => findSelectedNodeId(rawBranches, conversation?.activeBranchId ?? null),
@@ -103,7 +103,7 @@ export default function TreePage() {
   }, [selectedNodeId]);
 
   const maxColumn = gitNodes.length > 0 ? Math.max(...gitNodes.map((n) => n.column)) : 0;
-  const allEdges = useMemo(() => buildAllEdges(gitNodes, gitBranches), [gitNodes, gitBranches]);
+  const allEdges = useMemo(() => buildAllEdges(gitNodes, gitBranches, rawNodes, rawBranches), [gitNodes, gitBranches, rawNodes, rawBranches]);
 
   const highlightedNodeIds = useMemo(() => {
     const ids = new Set<string>();
@@ -117,8 +117,8 @@ export default function TreePage() {
   }, [allEdges, highlightedEdgeIds]);
 
   const rfNodes = useMemo(
-    () => buildReactFlowNodes(gitNodes, gitBranches, activeSelectedNodeId, highlightedNodeIds, maxColumn, branchMenu.visible, branchMenu.branchIndex, mergeState),
-    [gitNodes, gitBranches, activeSelectedNodeId, highlightedNodeIds, maxColumn, branchMenu.visible, branchMenu.branchIndex, mergeState],
+    () => buildReactFlowNodes(gitNodes, gitBranches, activeSelectedNodeId, highlightedNodeIds, maxColumn, branchMenu.visible, branchMenu.branchIndex, mergeState, rawNodes, rawBranches),
+    [gitNodes, gitBranches, activeSelectedNodeId, highlightedNodeIds, maxColumn, branchMenu.visible, branchMenu.branchIndex, mergeState, rawNodes, rawBranches],
   );
 
   const rfEdges = useMemo(
@@ -241,22 +241,6 @@ export default function TreePage() {
         setCherryPickConfirm({ visible: true, nodeId });
         return;
       }
-      if (action === 'switch') {
-        const targetNode = rawNodes.find((n) => n.id === nodeId);
-        if (!targetNode) return;
-        const doSwitch = async () => {
-          try {
-            const headers = await getHeaders();
-            const res = await fetch(`${API}/v1/conversations/${conversationId}/switch`, {
-              method: 'POST', headers,
-              body: JSON.stringify({ branch_id: targetNode.branchId }),
-            });
-            if (res.ok) { await refetchAll(); }
-          } catch (err) { console.error('Switch error:', err); }
-        };
-        doSwitch();
-        return;
-      }
       console.log(`Action: ${action}, Node: ${nodeId}`);
     },
     [gitNodes, allEdges, conversation?.activeBranchId, conversationId, getHeaders, rawNodes, refetchAll],
@@ -352,17 +336,36 @@ export default function TreePage() {
         return;
       }
 
+      if (action === 'switch') {
+        const doSwitch = async () => {
+          try {
+            const headers = await getHeaders();
+            const res = await fetch(`${API}/v1/conversations/${conversationId}/switch`, {
+              method: 'POST', headers,
+              body: JSON.stringify({ branch_id: branch.id }),
+            });
+            if (res.ok) {
+              setConversation((prev) => prev ? { ...prev, activeBranchId: branch.id } : prev);
+              await refetchAll();
+            }
+          } catch (err) { console.error('Switch error:', err); }
+        };
+        doSwitch();
+        return;
+      }
+
       if (action === 'diff') {
         setDiffView({ visible: true, branchId: branch.id });
         return;
       }
 
-      if (action === 'merge to') {
-        setMergeState({ status: 'selecting-source', targetBranchIndex: branchIndex, sourceBranchIndex: null });
-        return;
-      }
-
       if (action === 'merge') {
+        // Step 1: select target branch (merge into this branch)
+        if (mergeState.status === 'idle') {
+          setMergeState({ status: 'selecting-source', targetBranchIndex: branchIndex, sourceBranchIndex: null });
+          return;
+        }
+        // Step 2: select source branch and execute merge
         if (mergeState.status === 'selecting-source' && mergeState.targetBranchIndex !== null) {
           const targetBranch = rawBranches[mergeState.targetBranchIndex];
           if (!targetBranch || branchIndex === mergeState.targetBranchIndex) return;
@@ -398,8 +401,6 @@ export default function TreePage() {
           return;
         }
       }
-
-      console.log(`Branch action: ${action}, Branch: ${branch.name} (${branch.id})`);
     },
     [rawBranches, mergeState, getHeaders, conversationId, refetchData],
   );

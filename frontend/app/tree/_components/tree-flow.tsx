@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
+import { useTheme } from 'next-themes';
 import {
   ReactFlow,
   Background,
@@ -37,6 +38,8 @@ export const TreeFlowInner = ({
   readonly onNodeContextMenu: (event: React.MouseEvent, node: RFNode) => void;
   readonly onBranchLabelClick: (branchIndex: number, event: React.MouseEvent) => void;
 }) => {
+  const { resolvedTheme } = useTheme();
+
   const handleNodeClick = useCallback(
     (event: React.MouseEvent, node: RFNode) => {
       if (node.type === 'branchLabel') {
@@ -59,6 +62,8 @@ export const TreeFlowInner = ({
     [onNodeContextMenu],
   );
 
+  const bgColor = resolvedTheme === 'dark' ? '#333' : '#d4d4d4';
+
   return (
     <ReactFlow
       nodes={rfNodes}
@@ -76,7 +81,7 @@ export const TreeFlowInner = ({
       proOptions={{ hideAttribution: true }}
       style={{ background: 'transparent' }}
     >
-      <Background color="#404040" gap={20} size={1} />
+      <Background color={bgColor} gap={24} size={1} />
     </ReactFlow>
   );
 };

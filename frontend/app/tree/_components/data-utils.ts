@@ -1,7 +1,7 @@
 import type { Branch, ConversationNode } from '@/stores/conversation-store';
 import type { Node as RFNode, Edge as RFEdge } from '@xyflow/react';
 import type { GitNode, GitBranch, GraphEdge, DotNodeData, BranchLabelNodeData, ColoredEdgeData, MergeState } from './types';
-import { COLUMN_GAP, ROW_GAP, PADDING_LEFT, PADDING_TOP } from './types';
+import { COLUMN_GAP, ROW_GAP, PADDING_LEFT, PADDING_TOP, MERGE_ARROW_COLOR, CHERRY_PICK_ARROW_COLOR } from './types';
 
 export const hashStringToHue = (str: string): number => {
   const hash = Array.from(str).reduce((acc, char) => ((acc << 5) - acc + char.charCodeAt(0)) | 0, 0);
@@ -20,8 +20,13 @@ export const computeDepth = (
   return depth;
 };
 
-export const convertBranches = (branches: ReadonlyArray<Branch>): ReadonlyArray<GitBranch> =>
-  branches.map((branch) => ({ name: branch.name, color: `hsl(${hashStringToHue(branch.id)}, 70%, 50%)` }));
+export const convertBranches = (branches: ReadonlyArray<Branch>, activeBranchId: string | null): ReadonlyArray<GitBranch> =>
+  branches.map((branch) => ({
+    name: branch.name,
+    color: `hsl(${hashStringToHue(branch.id)}, 60%, 45%)`,
+    id: branch.id,
+    isActive: branch.id === activeBranchId,
+  }));
 
 export const convertNodes = (
   nodes: ReadonlyArray<ConversationNode>, branches: ReadonlyArray<Branch>,
@@ -34,6 +39,8 @@ export const convertNodes = (
     branchIndex: branchIdToIndex.get(node.branchId) ?? 0,
     column: computeDepth(node.id, nodeMap, depthCache),
     parentIds: node.parentId ? [node.parentId] : [],
+    nodeType: node.nodeType,
+    metadata: node.metadata,
   }));
 };
 
@@ -46,30 +53,107 @@ export const nodePosition = (node: GitNode) => ({
   y: PADDING_TOP + node.branchIndex * ROW_GAP,
 });
 
+// Find leaf nodes for each branch (for merge dots)
+const findBranchLeafNodes = (nodes: ReadonlyArray<GitNode>, branchCount: number): Map<number, GitNode> => {
+  const leafMap = new Map<number, GitNode>();
+  Array.from({ length: branchCount }).forEach((_, branchIdx) => {
+    const branchNodes = nodes.filter((n) => n.branchIndex === branchIdx);
+    const maxCol = Math.max(...branchNodes.map((n) => n.column), -1);
+    const leaf = branchNodes.find((n) => n.column === maxCol);
+    if (leaf) leafMap.set(branchIdx, leaf);
+  });
+  return leafMap;
+};
+
+type MergeMetadata = {
+  readonly merge_source_branch_id?: string;
+  readonly merge_source_head_node_id?: string;
+  readonly cherry_picked_from?: string;
+};
+
 export const buildAllEdges = (
   nodes: ReadonlyArray<GitNode>, branches: ReadonlyArray<GitBranch>,
+  rawNodes: ReadonlyArray<ConversationNode>, rawBranches: ReadonlyArray<Branch>,
 ): ReadonlyArray<GraphEdge> => {
-  const branchSegments: ReadonlyArray<GraphEdge> = branches.flatMap((branch, branchIdx) => {
+  const INACTIVE_EDGE_COLOR = '#737373';
+
+  // Segment edges (same branch, sequential)
+  const branchSegments: GraphEdge[] = branches.flatMap((branch, branchIdx) => {
+    const edgeColor = branch.isActive ? branch.color : INACTIVE_EDGE_COLOR;
     const branchNodes = nodes.filter((n) => n.branchIndex === branchIdx).toSorted((a, b) => a.column - b.column);
     return branchNodes.slice(1).map((node, i) => ({
       id: `seg-${branchNodes[i].id}-${node.id}`, fromNodeId: branchNodes[i].id, toNodeId: node.id,
-      edgeType: 'segment' as const, defaultColor: branch.color,
+      edgeType: 'segment' as const, defaultColor: edgeColor,
     }));
   });
+
+  // Connection edges (branch fork points)
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-  const connections: ReadonlyArray<GraphEdge> = nodes.flatMap((node) => {
-    const results: GraphEdge[] = [];
-    node.parentIds.forEach((parentId) => {
-      const parent = nodeMap.get(parentId);
-      if (!parent || parent.branchIndex === node.branchIndex) return;
-      results.push({
+  const rawNodeMap = new Map(rawNodes.map((n) => [n.id, n]));
+  const branchIdToIndex = new Map(rawBranches.map((b, i) => [b.id, i]));
+
+  const connections: GraphEdge[] = nodes.flatMap((node) =>
+    node.parentIds
+      .filter((parentId) => {
+        const parent = nodeMap.get(parentId);
+        return parent && parent.branchIndex !== node.branchIndex;
+      })
+      .map((parentId) => ({
         id: `conn-${parentId}-${node.id}`, fromNodeId: parentId, toNodeId: node.id,
-        edgeType: 'connection' as const, defaultColor: branches[node.branchIndex].color,
-      });
-    });
-    return results;
+        edgeType: 'connection' as const, defaultColor: branches[node.branchIndex]?.isActive ? branches[node.branchIndex].color : INACTIVE_EDGE_COLOR,
+      })),
+  );
+
+  // Merge arrows: summary nodes → find source head at merge time → draw dashed arrow
+  const mergeArrows: GraphEdge[] = [];
+  const cherryPickArrows: GraphEdge[] = [];
+
+  nodes.forEach((node) => {
+    const rawNode = rawNodeMap.get(node.id);
+    if (!rawNode) return;
+    const meta = rawNode.metadata as MergeMetadata | null;
+
+    // Merge: summary node with merge_source_head_node_id (head at merge time)
+    if (node.nodeType === 'summary' && meta?.merge_source_head_node_id) {
+      const sourceHeadNode = nodeMap.get(meta.merge_source_head_node_id);
+      if (sourceHeadNode) {
+        const sourceBranchIdx = sourceHeadNode.branchIndex;
+        const mergeDotId = `merge-dot-${sourceHeadNode.id}-${node.id}`;
+        // Edge from source head node to merge dot
+        branchSegments.push({
+          id: `seg-leaf-${sourceHeadNode.id}-${mergeDotId}`,
+          fromNodeId: sourceHeadNode.id,
+          toNodeId: mergeDotId,
+          edgeType: 'segment',
+          defaultColor: branches[sourceBranchIdx]?.isActive ? branches[sourceBranchIdx].color : INACTIVE_EDGE_COLOR,
+        });
+        // Dashed arrow from merge dot to summary node
+        mergeArrows.push({
+          id: `merge-arrow-${sourceHeadNode.id}-${node.id}`,
+          fromNodeId: mergeDotId,
+          toNodeId: node.id,
+          edgeType: 'merge-arrow',
+          defaultColor: MERGE_ARROW_COLOR,
+        });
+      }
+    }
+
+    // Cherry-pick: node with cherry_picked_from metadata
+    if (meta?.cherry_picked_from) {
+      const sourceNode = nodeMap.get(meta.cherry_picked_from);
+      if (sourceNode) {
+        cherryPickArrows.push({
+          id: `cherry-pick-${meta.cherry_picked_from}-${node.id}`,
+          fromNodeId: meta.cherry_picked_from,
+          toNodeId: node.id,
+          edgeType: 'cherry-pick-arrow',
+          defaultColor: CHERRY_PICK_ARROW_COLOR,
+        });
+      }
+    }
   });
-  return [...branchSegments, ...connections];
+
+  return [...branchSegments, ...connections, ...mergeArrows, ...cherryPickArrows];
 };
 
 export const tracePathToRoot = (
@@ -86,7 +170,9 @@ export const tracePathToRoot = (
   };
   traverse(tipNodeId);
   edges.forEach((edge) => {
-    if (pathNodeIds.has(edge.fromNodeId) && pathNodeIds.has(edge.toNodeId)) highlightedEdgeIds.add(edge.id);
+    if (edge.edgeType === 'segment' || edge.edgeType === 'connection') {
+      if (pathNodeIds.has(edge.fromNodeId) && pathNodeIds.has(edge.toNodeId)) highlightedEdgeIds.add(edge.id);
+    }
   });
   return highlightedEdgeIds;
 };
@@ -111,21 +197,47 @@ export const buildReactFlowNodes = (
   gitNodes: ReadonlyArray<GitNode>, gitBranches: ReadonlyArray<GitBranch>,
   activeSelectedNodeId: string | null, highlightedNodeIds: ReadonlySet<string>,
   maxColumn: number, branchMenuVisible: boolean, branchMenuBranchIndex: number, mergeState: MergeState,
+  rawNodes: ReadonlyArray<ConversationNode>, rawBranches: ReadonlyArray<Branch>,
 ): RFNode[] => {
+  const rawNodeMap = new Map(rawNodes.map((n) => [n.id, n]));
+  const branchIdToIndex = new Map(rawBranches.map((b, i) => [b.id, i]));
   const dotNodes: RFNode<DotNodeData>[] = gitNodes.map((node) => {
     const pos = nodePosition(node);
     const isSelected = node.id === activeSelectedNodeId;
     const isOnPath = highlightedNodeIds.has(node.id);
-    const dotColor = isSelected ? 'bg-amber-400' : isOnPath ? 'bg-red-500' : 'bg-neutral-400';
+    const isActiveBranch = gitBranches[node.branchIndex]?.isActive ?? false;
+    const dotColor = isSelected ? 'bg-amber-400' : 'bg-neutral-400 dark:bg-neutral-500';
     return {
       id: node.id, type: 'dotNode',
-      position: { x: pos.x - 10, y: pos.y - 10 },
-      data: { dotColor, isSelected, gitNodeId: node.id },
+      position: { x: pos.x - 5, y: pos.y - 5 },
+      data: { dotColor, isSelected, gitNodeId: node.id, isMergeDot: false, isActiveBranch },
       draggable: false, connectable: false,
     };
   });
+
+  // Add merge dots (half-size dots at leaf nodes of merge source branches)
+  const mergeDotNodes: RFNode<DotNodeData>[] = [];
+  const gitNodeMap = new Map(gitNodes.map((n) => [n.id, n]));
+  gitNodes.forEach((node) => {
+    const rawNode = rawNodeMap.get(node.id);
+    if (!rawNode || node.nodeType !== 'summary') return;
+    const meta = rawNode.metadata as MergeMetadata | null;
+    if (!meta?.merge_source_head_node_id) return;
+    const sourceHeadNode = gitNodeMap.get(meta.merge_source_head_node_id);
+    if (!sourceHeadNode) return;
+
+    const headPos = nodePosition(sourceHeadNode);
+    const mergeDotId = `merge-dot-${sourceHeadNode.id}-${node.id}`;
+    mergeDotNodes.push({
+      id: mergeDotId, type: 'dotNode',
+      position: { x: headPos.x + COLUMN_GAP * 0.5 - 3, y: headPos.y - 1 },
+      data: { dotColor: 'bg-violet-500', isSelected: false, gitNodeId: mergeDotId, isMergeDot: true, isActiveBranch: false },
+      draggable: false, connectable: false,
+    });
+  });
+
   const branchLabelNodes: RFNode<BranchLabelNodeData>[] = gitBranches.map((branch, index) => {
-    const x = PADDING_LEFT + (maxColumn + 1.5) * COLUMN_GAP;
+    const x = PADDING_LEFT + (maxColumn + 2) * COLUMN_GAP;
     const y = PADDING_TOP + index * ROW_GAP;
     const mergeRole = mergeState.targetBranchIndex === index
       ? ('merge-target' as const)
@@ -137,11 +249,12 @@ export const buildReactFlowNodes = (
         branchName: branch.name, branchIndex: index,
         isSelected: branchMenuVisible && branchMenuBranchIndex === index,
         isMergeHighlighted: mergeRole !== null, mergeRole, branchColor: branch.color,
+        isActiveBranch: branch.isActive,
       },
       draggable: false, connectable: false,
     };
   });
-  return [...dotNodes, ...branchLabelNodes];
+  return [...dotNodes, ...mergeDotNodes, ...branchLabelNodes];
 };
 
 export const buildReactFlowEdges = (
