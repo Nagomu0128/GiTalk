@@ -11,6 +11,7 @@ import { MergeDialog } from '@/app/conversation/_compornents/merge-dialog';
 import { DiffView } from '@/app/conversation/_compornents/diff-view';
 import { CreateBranchDialog } from '@/app/conversation/_compornents/create-branch-dialog';
 import { PushDialog } from '@/app/conversation/_compornents/push-dialog';
+import { DeleteDialog } from '@/app/conversation/_compornents/delete-dialog';
 import { SearchDialog } from '@/components/layout/search-dialog';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useAuthStore } from '@/stores/auth-store';
@@ -65,6 +66,16 @@ export default function ConversationPage() {
     if (success) dialogs.closeMergeDialog();
   }, [handleMerge, dialogs]);
 
+  const handleDelete = useCallback(async () => {
+    const token = await user?.getIdToken();
+    if (!token) return;
+    const res = await fetch(`/api/v1/conversations/${conversationId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) router.push('/dashboard');
+  }, [user, conversationId, router]);
+
   if (!conversation) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-neutral-900">
@@ -90,7 +101,8 @@ export default function ConversationPage() {
           onBack={() => router.push(`/tree/${conversationId}`)}
           onSearch={() => setConvSearchOpen(true)}
           onHelp={() => console.log('Help')}
-          onMore={dialogs.openPushDialog}
+          onPush={dialogs.openPushDialog}
+          onMore={dialogs.openDeleteDialog}
           branchSelector={
             nodes.length > 0 ? (
               <BranchSelector
@@ -132,6 +144,10 @@ export default function ConversationPage() {
 
       {dialogs.showPushDialog && (
         <PushDialog conversationId={conversationId} onClose={dialogs.closePushDialog} />
+      )}
+
+      {dialogs.showDeleteDialog && (
+        <DeleteDialog onDelete={handleDelete} onClose={dialogs.closeDeleteDialog} />
       )}
 
       {branchBaseNodeId && (
