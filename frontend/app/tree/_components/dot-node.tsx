@@ -6,17 +6,18 @@ import type { DotNodeData } from './types';
 
 export const DotNodeComponent = memo(({ data }: NodeProps<RFNode<DotNodeData>>) => {
   const dotColor = data.dotColor;
-  const size = data.isMergeDot ? 'h-[6px] w-[6px]' : 'h-[10px] w-[10px]';
-  const outerSize = data.isMergeDot ? 'h-3 w-3' : 'h-4 w-4';
+  const dotSize = data.isMergeDot ? 'h-[6px] w-[6px]' : 'h-[10px] w-[10px]';
+  const dotHoverSize = data.isMergeDot ? '' : 'group-hover:h-[14px] group-hover:w-[14px]';
+  const outerSize = data.isMergeDot ? 'h-3 w-3' : 'h-5 w-5';
 
   return (
     <div
-      className={`flex items-center justify-center ${outerSize} rounded-full cursor-pointer transition-all ${
+      className={`group flex items-center justify-center ${outerSize} rounded-full cursor-pointer ${
         data.isSelected ? 'ring-2 ring-amber-400/60 ring-offset-1 ring-offset-transparent' : ''
-      } ${!data.isMergeDot ? 'hover:scale-150' : ''}`}
+      }`}
     >
       <Handle type="target" position={Position.Left} className="!bg-transparent !border-0 !w-0 !h-0" />
-      <span className={`block ${size} rounded-full ${dotColor} transition-colors`} />
+      <span className={`block ${dotSize} ${dotHoverSize} rounded-full ${dotColor} transition-all`} />
       <Handle type="source" position={Position.Right} className="!bg-transparent !border-0 !w-0 !h-0" />
     </div>
   );
