@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { GitBranch } from 'lucide-react';
 import { useConversationStore, type Branch, type ConversationNode } from '@/stores/conversation-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { DiffHeader } from './diff-header';
@@ -64,8 +65,22 @@ export function DiffView({ conversationId, onClose, branches: branchesProp, init
           <DiffBranchPanel branchName={diffData.branch_b.name} nodes={diffData.branch_b.nodes} />
         </div>
       ) : (
-        <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-neutral-500">ブランチを選択して比較してください</p>
+        <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-1 flex-col items-center justify-center gap-4">
+            <GitBranch size={36} className="text-neutral-300 dark:text-neutral-700" />
+            <p className="text-sm text-neutral-400 dark:text-neutral-600">比較元のブランチ</p>
+          </div>
+          <div className="relative w-px shrink-0 bg-neutral-200 dark:bg-neutral-700">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <span className="flex items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-500">
+                vs
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-1 flex-col items-center justify-center gap-4">
+            <GitBranch size={36} className="text-neutral-300 dark:text-neutral-700" />
+            <p className="text-sm text-neutral-400 dark:text-neutral-600">比較先のブランチを選択してください</p>
+          </div>
         </div>
       )}
     </div>
