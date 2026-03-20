@@ -3,22 +3,20 @@ import Link from 'next/link';
 
 const FEATURES = [
   {
-    icon: '/icon-branch.png',
+    image: '/light_mode_branch_image.png',
     title: '分岐する',
     description: '会話を好きなだけ枝分かれさせて並行探索',
-    darkBg: true,
   },
   {
-    icon: '/icon-merge.png',
+    image: '/light_mode_merge_image.png',
     title: '統合する',
     description: 'ブランチの結論を一つにまとめる',
-    darkBg: true,
   },
   {
-    icon: '/icon-save.png',
+    image: '/light_mode_box_image.png',
     title: '保存する',
     description: 'リポジトリとして構造ごと保存',
-    darkBg: true,
+    size: 72,
   },
 ] as const;
 
@@ -70,14 +68,12 @@ export default function LandingPage() {
         <div className="mx-auto grid max-w-4xl grid-cols-1 gap-8 sm:grid-cols-3">
           {FEATURES.map((feature) => (
             <div key={feature.title} className="flex flex-col items-center text-center">
-              <div
-                className={`mb-4 flex h-16 w-16 items-center justify-center rounded-xl ${feature.darkBg ? 'bg-gray-900' : 'border border-gray-200 bg-white'}`}
-              >
+              <div className="mb-4 flex h-24 w-24 items-center justify-center">
                 <Image
-                  src={feature.icon}
+                  src={feature.image}
                   alt={feature.title}
-                  width={40}
-                  height={40}
+                  width={'size' in feature ? feature.size : 96}
+                  height={'size' in feature ? feature.size : 96}
                   className="object-contain"
                   unoptimized
                 />
