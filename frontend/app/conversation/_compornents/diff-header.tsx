@@ -1,5 +1,12 @@
 import { ArrowLeft, GitBranch } from 'lucide-react';
 import type { Branch } from '@/stores/conversation-store';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type DiffHeaderProps = {
   readonly branches: ReadonlyArray<Branch>;
@@ -38,31 +45,36 @@ export const DiffHeader = ({
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2">
         <GitBranch size={14} className="text-neutral-400" />
-        <select
-          value={branchAId}
-          onChange={(e) => onBranchAChange(e.target.value)}
-          className="rounded-lg border border-neutral-300 bg-white px-2 dark:border-neutral-600 dark:bg-neutral-800 py-1 text-xs text-neutral-300 outline-none"
-        >
-          {branches.map((b) => (
-            <option key={b.id} value={b.id}>{b.name}</option>
-          ))}
-        </select>
+        <Select value={branchAId} onValueChange={(val) => { if (val) onBranchAChange(val); }}>
+          <SelectTrigger size="sm" className="text-xs text-neutral-300">
+            <SelectValue placeholder="ブランチを選択">
+              {(value: string | null) => branches.find((b) => b.id === value)?.name ?? 'ブランチを選択'}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {branches.map((b) => (
+              <SelectItem key={b.id} value={b.id} label={b.name}>{b.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <span className="text-xs text-neutral-500">vs</span>
 
       <div className="flex items-center gap-2">
         <GitBranch size={14} className="text-neutral-400" />
-        <select
-          value={branchBId}
-          onChange={(e) => onBranchBChange(e.target.value)}
-          className="rounded-lg border border-neutral-300 bg-white px-2 dark:border-neutral-600 dark:bg-neutral-800 py-1 text-xs text-neutral-300 outline-none"
-        >
-          <option value="">ブランチを選択...</option>
-          {branches.filter((b) => b.id !== branchAId).map((b) => (
-            <option key={b.id} value={b.id}>{b.name}</option>
-          ))}
-        </select>
+        <Select value={branchBId} onValueChange={(val) => onBranchBChange(val ?? '')}>
+          <SelectTrigger size="sm" className="text-xs text-neutral-300">
+            <SelectValue placeholder="ブランチを選択...">
+              {(value: string | null) => branches.find((b) => b.id === value)?.name ?? 'ブランチを選択...'}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {branches.filter((b) => b.id !== branchAId).map((b) => (
+              <SelectItem key={b.id} value={b.id} label={b.name}>{b.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <button

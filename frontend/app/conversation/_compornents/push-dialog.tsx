@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useAuthStore } from '@/stores/auth-store';
-import { useToastStore } from '@/stores/toast-store';
+import { toast } from 'sonner';
 
 const API = '/api';
 
@@ -21,7 +21,6 @@ export function PushDialog({ conversationId, onClose }: PushDialogProps) {
   const branches = useConversationStore((s) => s.branches);
   const conversation = useConversationStore((s) => s.conversation);
   const user = useAuthStore((s) => s.user);
-  const addToast = useToastStore((s) => s.addToast);
 
   const [mode, setMode] = useState<'existing' | 'new'>('new');
   const [repos, setRepos] = useState<ReadonlyArray<Repository>>([]);
@@ -67,7 +66,7 @@ export function PushDialog({ conversationId, onClose }: PushDialogProps) {
         method: 'POST', headers,
         body: JSON.stringify({ title: newRepoTitle, description: newRepoDescription || null, visibility }),
       });
-      if (!createRes.ok) { addToast('リポジトリ作成に失敗しました', 'error'); setLoading(false); return; }
+      if (!createRes.ok) { toast.error('リポジトリ作成に失敗しました'); setLoading(false); return; }
       const newRepo = await createRes.json();
       repoId = newRepo.id;
     }
@@ -78,8 +77,8 @@ export function PushDialog({ conversationId, onClose }: PushDialogProps) {
     });
 
     setLoading(false);
-    if (pushRes.ok) { addToast('保存しました', 'success'); onClose(); }
-    else { const err = await pushRes.json(); addToast(err.error?.message ?? 'Push に失敗しました', 'error'); }
+    if (pushRes.ok) { toast.success('リポジトリに保存しました'); onClose(); }
+    else { const err = await pushRes.json(); toast.error(err.error?.message ?? 'Push に失敗しました'); }
   };
 
   return (

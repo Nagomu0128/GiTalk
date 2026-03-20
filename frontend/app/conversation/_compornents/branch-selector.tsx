@@ -2,6 +2,13 @@
 
 import { GitBranch, GitCompareArrows, Merge } from 'lucide-react';
 import { useConversationStore } from '@/stores/conversation-store';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type BranchSelectorProps = {
   readonly onSwitch: (branchId: string) => void;
@@ -16,17 +23,23 @@ export function BranchSelector({ onSwitch, onMerge, onDiff }: BranchSelectorProp
   return (
     <div className="flex items-center gap-2">
       <GitBranch size={14} className="text-neutral-700 dark:text-neutral-400" />
-      <select
-        value={activeBranchId ?? ''}
-        onChange={(e) => onSwitch(e.target.value)}
-        className="rounded-lg border border-neutral-300 bg-white px-2 py-1 text-xs text-neutral-700 outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
-      >
-        {branches.map((branch) => (
-          <option key={branch.id} value={branch.id}>
-            {branch.name}{branch.isDefault ? ' (default)' : ''}
-          </option>
-        ))}
-      </select>
+      <Select value={activeBranchId ?? ''} onValueChange={(val) => { if (val) onSwitch(val); }}>
+        <SelectTrigger size="sm" className="text-xs text-neutral-700 dark:text-neutral-300">
+          <SelectValue placeholder="ブランチを選択">
+            {(value: string | null) => {
+              const branch = branches.find((b) => b.id === value);
+              return branch ? `${branch.name}${branch.isDefault ? ' (default)' : ''}` : 'ブランチを選択';
+            }}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {branches.map((branch) => (
+            <SelectItem key={branch.id} value={branch.id} label={`${branch.name}${branch.isDefault ? ' (default)' : ''}`}>
+              {branch.name}{branch.isDefault ? ' (default)' : ''}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       <button
         onClick={onDiff}

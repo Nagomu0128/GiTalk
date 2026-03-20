@@ -6,6 +6,13 @@ import { useConversationStore, type Branch, type ConversationNode } from '@/stor
 import { useAuthStore } from '@/stores/auth-store';
 import { DiffHeader } from './diff-header';
 import { DiffBranchPanel } from './diff-branch-panel';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const API = '/api';
 
@@ -69,15 +76,18 @@ export function DiffView({ conversationId, onClose, branches: branchesProp, init
           <div className="flex flex-1 flex-col items-center justify-center gap-4">
             <GitBranch size={36} className="text-neutral-300 dark:text-neutral-700" />
             <p className="text-sm text-neutral-400 dark:text-neutral-600">比較元のブランチ</p>
-            <select
-              value={branchAId}
-              onChange={(e) => setBranchAId(e.target.value)}
-              className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-700 outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
-            >
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
+            <Select value={branchAId} onValueChange={(val) => { if (val) setBranchAId(val); }}>
+              <SelectTrigger className="text-sm text-neutral-700 dark:text-neutral-300">
+                <SelectValue placeholder="ブランチを選択">
+                  {(value: string | null) => branches.find((b) => b.id === value)?.name ?? 'ブランチを選択'}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {branches.map((b) => (
+                  <SelectItem key={b.id} value={b.id} label={b.name}>{b.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="relative w-px shrink-0 bg-neutral-200 dark:bg-neutral-700">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-50 py-2 dark:bg-neutral-900">
@@ -93,16 +103,18 @@ export function DiffView({ conversationId, onClose, branches: branchesProp, init
           <div className="flex flex-1 flex-col items-center justify-center gap-4">
             <GitBranch size={36} className="text-neutral-300 dark:text-neutral-700" />
             <p className="text-sm text-neutral-400 dark:text-neutral-600">比較先のブランチを選択してください</p>
-            <select
-              value={branchBId}
-              onChange={(e) => setBranchBId(e.target.value)}
-              className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-700 outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
-            >
-              <option value="">ブランチを選択...</option>
-              {branches.filter((b) => b.id !== branchAId).map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
+            <Select value={branchBId} onValueChange={(val) => setBranchBId(val ?? '')}>
+              <SelectTrigger className="text-sm text-neutral-700 dark:text-neutral-300">
+                <SelectValue placeholder="ブランチを選択...">
+                  {(value: string | null) => branches.find((b) => b.id === value)?.name ?? 'ブランチを選択...'}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {branches.filter((b) => b.id !== branchAId).map((b) => (
+                  <SelectItem key={b.id} value={b.id} label={b.name}>{b.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       )}
