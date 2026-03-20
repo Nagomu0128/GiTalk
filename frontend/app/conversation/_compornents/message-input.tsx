@@ -71,7 +71,7 @@ export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
         </div>
 
         {/* Input bar */}
-        <div className="flex items-end gap-2 rounded-2xl border border-neutral-600 bg-neutral-800 px-4 py-3">
+        <div className="flex items-center gap-2 rounded-2xl border border-neutral-600 bg-neutral-800 px-4 py-3">
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
