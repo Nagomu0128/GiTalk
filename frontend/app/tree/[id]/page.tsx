@@ -767,6 +767,7 @@ export default function TreePage() {
   }>({ visible: false, nodeId: '', position: { x: 0, y: 0 } });
   const [newBranchLoading, setNewBranchLoading] = useState(false);
 
+  const [cherryPickConfirm, setCherryPickConfirm] = useState<{ visible: boolean; nodeId: string }>({ visible: false, nodeId: '' });
   const [activeSelectedNodeId, setActiveSelectedNodeId] = useState<string | null>(null);
   const [highlightedEdgeIds, setHighlightedEdgeIds] = useState<ReadonlySet<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -827,6 +828,23 @@ export default function TreePage() {
     const token = await user?.getIdToken();
     return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
   }, [user]);
+
+  const refetchAll = useCallback(async () => {
+    try {
+      const headers = await getHeaders();
+      const [branchesRes, nodesRes] = await Promise.all([
+        fetch(`${API}/v1/conversations/${conversationId}/branches`, { headers }),
+        fetch(`${API}/v1/conversations/${conversationId}/nodes`, { headers }),
+      ]);
+      if (branchesRes.ok && nodesRes.ok) {
+        const [branchesData, nodesData] = await Promise.all([branchesRes.json(), nodesRes.json()]);
+        setRawBranches(branchesData.data);
+        setRawNodes(nodesData.nodes);
+      }
+    } catch (error) {
+      console.error('Refetch failed:', error);
+    }
+  }, [conversationId, getHeaders]);
 
   useEffect(() => {
     if (!user || !conversationId) return;
@@ -910,14 +928,61 @@ export default function TreePage() {
         });
         return;
       }
+      if (action === 'cherry-pick') {
+        setCherryPickConfirm({ visible: true, nodeId });
+        return;
+      }
+      if (action === 'switch') {
+        const targetNode = rawNodes.find((n) => n.id === nodeId);
+        if (!targetNode) return;
+        const doSwitch = async () => {
+          try {
+            const headers = await getHeaders();
+            const res = await fetch(`${API}/v1/conversations/${conversationId}/switch`, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ branch_id: targetNode.branchId }),
+            });
+            if (res.ok) {
+              await refetchAll();
+            }
+          } catch (error) {
+            console.error('Switch error:', error);
+          }
+        };
+        doSwitch();
+        return;
+      }
       console.log(`Action: ${action}, Node: ${nodeId}`);
     },
-    [gitNodes, allEdges],
+    [gitNodes, allEdges, conversation?.activeBranchId, conversationId, getHeaders, rawNodes, refetchAll],
   );
 
   const handleCloseContextMenu = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, visible: false }));
   }, []);
+
+  const handleCherryPickConfirm = useCallback(async () => {
+    const activeBranchId = conversation?.activeBranchId;
+    if (!activeBranchId || !cherryPickConfirm.nodeId) return;
+    try {
+      const headers = await getHeaders();
+      const res = await fetch(`${API}/v1/conversations/${conversationId}/cherry-pick`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ source_node_id: cherryPickConfirm.nodeId, target_branch_id: activeBranchId }),
+      });
+      if (res.ok) {
+        await refetchAll();
+      } else {
+        const err = await res.json();
+        console.error('Cherry-pick failed:', err.error?.message);
+      }
+    } catch (error) {
+      console.error('Cherry-pick error:', error);
+    }
+    setCherryPickConfirm({ visible: false, nodeId: '' });
+  }, [conversation?.activeBranchId, cherryPickConfirm.nodeId, conversationId, getHeaders, refetchAll]);
 
   const handleCloseChatPanel = useCallback(() => {
     setChatPanelNodeId(null);
@@ -1273,6 +1338,35 @@ export default function TreePage() {
         onConfirm={handleNewBranchConfirm}
         onCancel={handleNewBranchCancel}
       />
+
+      {/* Cherry-pick Confirm */}
+      {cherryPickConfirm.visible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="w-full max-w-sm rounded-2xl border border-neutral-700 bg-neutral-800 p-6 shadow-xl">
+            <h3 className="mb-2 text-base font-bold text-neutral-100">このコンテキストを取り込みますか？</h3>
+            <p className="mb-5 text-sm text-neutral-400">
+              選択したノードの内容を現在のアクティブブランチにコピーします。
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-neutral-400 hover:text-neutral-200"
+                onClick={() => setCherryPickConfirm({ visible: false, nodeId: '' })}
+              >
+                キャンセル
+              </Button>
+              <Button
+                size="sm"
+                className="bg-amber-500 text-neutral-900 hover:bg-amber-400"
+                onClick={handleCherryPickConfirm}
+              >
+                取り込む
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

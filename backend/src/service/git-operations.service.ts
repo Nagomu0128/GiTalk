@@ -1,6 +1,6 @@
 import type { Content } from '@google/generative-ai';
 import { findBranchById, updateBranchHead } from '../infra/branch.js';
-import { getPathToRoot, createNode, type NodeRecord } from '../infra/node.js';
+import { findNodeById, getPathToRoot, createNode, type NodeRecord } from '../infra/node.js';
 import { updateConversation } from '../infra/conversation.js';
 import { generateContentWithMetadata } from '../infra/gemini.js';
 import { findLCA } from '../domain/lca.js';
@@ -257,6 +257,67 @@ export const mergeBranches = async (
     data: {
       node: summaryNode,
       updatedBranch: { id: targetBranchId, headNodeId: summaryNode.id },
+    },
+  };
+};
+
+// ============================================================
+// Cherry-pick
+// ============================================================
+export const cherryPickNode = async (
+  conversationId: string,
+  sourceNodeId: string,
+  targetBranchId: string,
+  userId: string,
+): Promise<
+  | { ok: true; data: { node: NodeRecord; updatedBranch: { id: string; headNodeId: string } } }
+  | { ok: false; code: string; message: string; status: number }
+> => {
+  const sourceResult = await findNodeById(sourceNodeId, conversationId);
+  if (sourceResult.isErr() || !sourceResult.value) {
+    return { ok: false, code: 'NOT_FOUND', message: 'Source node not found', status: 404 };
+  }
+
+  const targetBranchResult = await findBranchById(targetBranchId, conversationId);
+  if (targetBranchResult.isErr() || !targetBranchResult.value) {
+    return { ok: false, code: 'NOT_FOUND', message: 'Target branch not found', status: 404 };
+  }
+
+  const sourceNode = sourceResult.value;
+  const targetBranch = targetBranchResult.value;
+
+  // 新ノードを作成（ソースノードの内容をコピー）
+  const nodeResult = await createNode({
+    conversationId,
+    branchId: targetBranchId,
+    parentId: targetBranch.headNodeId,
+    nodeType: 'message',
+    userMessage: sourceNode.userMessage,
+    aiResponse: sourceNode.aiResponse,
+    model: sourceNode.model,
+    tokenCount: sourceNode.tokenCount,
+    metadata: { cherry_picked_from: sourceNodeId },
+    createdBy: userId,
+  });
+
+  if (nodeResult.isErr()) {
+    logger.error('Failed to create cherry-pick node', { error: nodeResult.error.message });
+    return { ok: false, code: 'INTERNAL_ERROR', message: 'Failed to create node', status: 500 };
+  }
+
+  const newNode = nodeResult.value;
+
+  // ターゲットブランチの head を更新（楽観的ロック）
+  const headResult = await updateBranchHead(targetBranchId, newNode.id, targetBranch.headNodeId);
+  if (headResult.isErr() || !headResult.value) {
+    return { ok: false, code: 'CONFLICT', message: 'Target branch was modified concurrently', status: 409 };
+  }
+
+  return {
+    ok: true,
+    data: {
+      node: newNode,
+      updatedBranch: { id: targetBranchId, headNodeId: newNode.id },
     },
   };
 };

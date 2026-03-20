@@ -175,3 +175,18 @@ repositoriesRouter.post('/:id/push', authMiddleware, async (c) => {
 
   return c.json({ pushed_branches: result.data });
 });
+
+// POST /v1/repositories/:id/clone (auth required)
+repositoriesRouter.post('/:id/clone', authMiddleware, async (c) => {
+  const user = getAuthUser(c);
+  const repoId = c.req.param('id');
+  if (!repoId) return c.json({ error: { code: 'BAD_REQUEST', message: 'Missing id' } }, 400);
+
+  const body = await c.req.json().catch(() => ({}));
+  const branchIds = Array.isArray(body.branch_ids) ? body.branch_ids : undefined;
+
+  const result = await repoService.cloneRepository(repoId, user.dbUser.id, branchIds);
+  if (!result.ok) return c.json({ error: { code: result.code, message: result.message } }, result.status as 400 | 404 | 500);
+
+  return c.json(result.data, 201);
+});

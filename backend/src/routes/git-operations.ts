@@ -7,6 +7,11 @@ const switchSchema = z.object({
   branch_id: z.string().uuid(),
 });
 
+const cherryPickSchema = z.object({
+  source_node_id: z.string().uuid(),
+  target_branch_id: z.string().uuid(),
+});
+
 const resetSchema = z.object({
   branch_id: z.string().uuid(),
   target_node_id: z.string().uuid(),
@@ -144,6 +149,42 @@ gitOperationsRouter.post('/merge', async (c) => {
 
   if (!result.ok) {
     return c.json({ error: { code: result.code, message: result.message } }, result.status as 400 | 404 | 409 | 500 | 502);
+  }
+
+  return c.json({
+    node: result.data.node,
+    updated_branch: result.data.updatedBranch,
+  });
+});
+
+// POST /v1/conversations/:conversationId/cherry-pick
+gitOperationsRouter.post('/cherry-pick', async (c) => {
+  const user = getAuthUser(c);
+  const conversationId = c.req.param('conversationId');
+  if (!conversationId) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'Missing conversationId' } }, 400);
+  }
+
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = cherryPickSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: parsed.error.message } }, 400);
+  }
+
+  const convResult = await conversationInfra.findConversationById(conversationId, user.dbUser.id);
+  if (convResult.isErr() || !convResult.value) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Conversation not found' } }, 404);
+  }
+
+  const result = await gitOps.cherryPickNode(
+    conversationId,
+    parsed.data.source_node_id,
+    parsed.data.target_branch_id,
+    user.dbUser.id,
+  );
+
+  if (!result.ok) {
+    return c.json({ error: { code: result.code, message: result.message } }, result.status as 400 | 404 | 409 | 500);
   }
 
   return c.json({
