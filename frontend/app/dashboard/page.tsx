@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { MoreVertical, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { ConversationCard } from '@/components/cards/conversation-card';
+import { SaveToRepoDialog } from '@/components/dialogs/save-to-repo-dialog';
 
 const API = '/api';
 
@@ -18,6 +20,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const [conversations, setConversations] = useState<ReadonlyArray<ConversationSummary>>([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [saveTarget, setSaveTarget] = useState<ConversationSummary | null>(null);
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -28,11 +33,28 @@ export default function DashboardPage() {
       if (res.ok) {
         const data = await res.json();
         setConversations(data.data);
+        setHasMore(data.has_more);
+        setCursor(data.next_cursor);
       }
       setLoading(false);
     };
     fetchConversations();
   }, [user]);
+
+  const handleLoadMore = async () => {
+    if (!cursor) return;
+    const token = await user?.getIdToken();
+    const params = new URLSearchParams({ limit: '6', cursor });
+    const res = await fetch(`${API}/v1/conversations?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setConversations((prev) => [...prev, ...data.data]);
+      setHasMore(data.has_more);
+      setCursor(data.next_cursor);
+    }
+  };
 
   const handleNewConversation = async () => {
     try {
@@ -64,29 +86,64 @@ export default function DashboardPage() {
   };
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold">ようこそ、{user?.displayName ?? 'User'}さん</h1>
+    <div className="flex flex-1 flex-col">
+      {/* Header */}
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-700 px-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-neutral-300 bg-neutral-800 text-sm font-bold text-neutral-200">
+            G
+          </div>
+          <h1 className="text-lg font-bold text-neutral-200">Dash Board</h1>
+        </div>
         <button
           onClick={handleNewConversation}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
         >
-          + 新しい会話を始める
+          <MoreVertical size={16} />
         </button>
-      </div>
+      </header>
 
-      <section>
-        <h2 className="mb-4 text-sm font-medium text-gray-500">最近の会話</h2>
-        {loading && <p className="text-sm text-gray-400">読み込み中...</p>}
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-8 py-6">
+        {loading && <p className="text-sm text-neutral-500">読み込み中...</p>}
         {!loading && conversations.length === 0 && (
-          <p className="text-sm text-gray-400">まだ会話がありません。新しい会話を始めましょう。</p>
+          <p className="text-sm text-neutral-500">まだ会話がありません。新しい会話を始めましょう。</p>
         )}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {conversations.map((conv) => (
-            <ConversationCard key={conv.id} id={conv.id} title={conv.title} updatedAt={conv.updatedAt} onDelete={handleDelete} />
+            <ConversationCard
+              key={conv.id}
+              id={conv.id}
+              title={conv.title}
+              updatedAt={conv.updatedAt}
+              onDelete={handleDelete}
+              onSave={() => setSaveTarget(conv)}
+            />
           ))}
         </div>
-      </section>
+
+        {/* Load more */}
+        {hasMore && (
+          <div className="mt-8 flex flex-col items-center gap-1">
+            <button
+              onClick={handleLoadMore}
+              className="flex flex-col items-center gap-1 text-sm text-neutral-400 transition-colors hover:text-neutral-200"
+            >
+              <span>もっと見る</span>
+              <ChevronDown size={18} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {saveTarget && (
+        <SaveToRepoDialog
+          conversationId={saveTarget.id}
+          conversationTitle={saveTarget.title}
+          onClose={() => setSaveTarget(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { Search, ArrowLeft, HelpCircle, GitBranch } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { MessageBubble } from '@/components/chat/message-bubble';
 
@@ -30,17 +31,74 @@ type RepoBranch = {
   readonly nodes: ReadonlyArray<RepoNode>;
 };
 
+// --- Header Component ---
+
+const Header = ({
+  title,
+  visibility,
+  description,
+  onBack,
+  onSearch,
+  onHelp,
+}: {
+  readonly title: string;
+  readonly visibility: 'private' | 'public';
+  readonly description: string | null;
+  readonly onBack: () => void;
+  readonly onSearch: () => void;
+  readonly onHelp: () => void;
+}) => (
+  <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-700 px-4">
+    <div className="flex items-center gap-3">
+      <button
+        onClick={onBack}
+        className="flex items-center gap-2 text-sm text-neutral-300 transition-colors hover:text-neutral-100"
+      >
+        <ArrowLeft size={16} />
+        <span>リポジトリ一覧</span>
+      </button>
+      <span className="text-neutral-600">|</span>
+      <span className="truncate text-sm font-medium text-neutral-200">{title}</span>
+      <span className="rounded border border-neutral-600 px-2 py-0.5 text-xs text-neutral-400">
+        {visibility}
+      </span>
+      {description && (
+        <>
+          <span className="text-neutral-600">|</span>
+          <span className="truncate text-xs text-neutral-500">{description}</span>
+        </>
+      )}
+    </div>
+    <div className="flex items-center gap-2">
+      <button
+        onClick={onSearch}
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-600 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+      >
+        <Search size={14} />
+      </button>
+      <button
+        onClick={onHelp}
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-600 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+      >
+        <HelpCircle size={14} />
+      </button>
+    </div>
+  </header>
+);
+
+// --- Page Component ---
+
 export default function RepositoryDetailPage() {
   const params = useParams();
   const router = useRouter();
   const repoId = params.id as string;
   const user = useAuthStore((s) => s.user);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const [repo, setRepo] = useState<Repository | null>(null);
   const [branches, setBranches] = useState<ReadonlyArray<RepoBranch>>([]);
   const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'branches' | 'tree'>('branches');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,20 +119,29 @@ export default function RepositoryDetailPage() {
         const nodesData = await nodesRes.json();
         setBranches(nodesData.branches);
         if (nodesData.branches.length > 0) {
-          setSelectedBranch(nodesData.branches[0].repository_branch_id); // eslint-disable-line react-hooks/set-state-in-effect
+          setSelectedBranch(nodesData.branches[0].repository_branch_id);
         }
       }
       setLoading(false);
     };
-    fetchData(); // eslint-disable-line react-hooks/set-state-in-effect
+    fetchData();
   }, [repoId, user, router]);
 
   const selectedBranchData = branches.find((b) => b.repository_branch_id === selectedBranch);
 
+  // Scroll to top when branch changes
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [selectedBranch]);
+
+  const handleBack = useCallback(() => {
+    router.push('/dashboard/repositories');
+  }, [router]);
+
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+      <div className="flex h-screen w-full items-center justify-center bg-neutral-900">
+        <div className="text-neutral-400">読み込み中...</div>
       </div>
     );
   }
@@ -82,99 +149,81 @@ export default function RepositoryDetailPage() {
   if (!repo) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="border-b bg-white px-6 py-4">
-        <button onClick={() => router.push('/dashboard/repositories')} className="mb-2 text-sm text-gray-500 hover:text-gray-700">
-          ← 戻る
-        </button>
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold">📦 {repo.title}</h1>
-          <span className="text-xs text-gray-400">
-            {repo.visibility === 'private' ? '🔒 Private' : '🌐 Public'}
-          </span>
-        </div>
-        {repo.description && <p className="mt-1 text-sm text-gray-500">{repo.description}</p>}
-        <button
-          onClick={async () => {
-            const token = await user?.getIdToken();
-            const res = await fetch(`${API}/v1/repositories/${repoId}/clone`, {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (res.ok) {
-              const data = await res.json();
-              router.push(`/conversation/${data.conversationId}`);
-            }
-          }}
-          className="mt-2 rounded-lg border border-gray-300 px-3 py-1 text-sm text-gray-600 hover:bg-gray-50"
-        >
-          📋 コピーして使う
-        </button>
-      </div>
+    <div className="flex h-screen w-full bg-neutral-900">
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Header */}
+        <Header
+          title={repo.title}
+          visibility={repo.visibility}
+          description={repo.description}
+          onBack={handleBack}
+          onSearch={() => console.log('Search')}
+          onHelp={() => console.log('Help')}
+        />
 
-      <div className="border-b bg-white px-6">
-        <div className="flex gap-4">
-          <button
-            onClick={() => setActiveTab('branches')}
-            className={`border-b-2 px-2 py-3 text-sm ${activeTab === 'branches' ? 'border-blue-600 font-medium text-blue-600' : 'border-transparent text-gray-500'}`}
-          >
-            🌿 ブランチ一覧
-          </button>
-          <button
-            onClick={() => setActiveTab('tree')}
-            className={`border-b-2 px-2 py-3 text-sm ${activeTab === 'tree' ? 'border-blue-600 font-medium text-blue-600' : 'border-transparent text-gray-500'}`}
-          >
-            🌳 会話表示
-          </button>
-        </div>
-      </div>
-
-      <div className="p-6">
-        {activeTab === 'branches' && (
-          <div className="flex flex-col gap-3">
-            {branches.length === 0 && <p className="text-sm text-gray-400">まだブランチがpushされていません</p>}
-            {branches.map((branch) => (
-              <div key={branch.repository_branch_id} className="rounded-xl border bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium">🌿 {branch.name}</h3>
-                  <span className="text-xs text-gray-400">{branch.nodes.length} nodes</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {activeTab === 'tree' && (
-          <div>
-            <div className="mb-4">
-              <select
-                value={selectedBranch ?? ''}
-                onChange={(e) => setSelectedBranch(e.target.value)}
-                className="rounded border px-3 py-2 text-sm"
-              >
-                {branches.map((b) => (
-                  <option key={b.repository_branch_id} value={b.repository_branch_id}>
-                    🌿 {b.name}
-                  </option>
-                ))}
-              </select>
+        {/* Split view: branch list + conversation */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Branch list panel */}
+          <div className="flex w-60 shrink-0 flex-col border-r border-neutral-700">
+            <div className="flex h-10 shrink-0 items-center px-4">
+              <span className="text-xs font-medium text-neutral-500">ブランチ</span>
             </div>
+            <div className="flex-1 overflow-y-auto px-2 pb-4">
+              {branches.length === 0 && (
+                <p className="px-2 text-xs text-neutral-500">まだブランチがpushされていません</p>
+              )}
+              {branches.map((branch) => (
+                <button
+                  key={branch.repository_branch_id}
+                  onClick={() => setSelectedBranch(branch.repository_branch_id)}
+                  className={`mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+                    selectedBranch === branch.repository_branch_id
+                      ? 'bg-neutral-700 text-neutral-100'
+                      : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200'
+                  }`}
+                >
+                  <GitBranch size={14} className="shrink-0" />
+                  <span className="flex-1 truncate">{branch.name}</span>
+                  <span className="shrink-0 text-xs text-neutral-500">{branch.nodes.length}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
-            {selectedBranchData && (
-              <div className="rounded-xl border bg-white p-4">
-                {selectedBranchData.nodes.length === 0 && (
-                  <p className="text-sm text-gray-400">このブランチにはノードがありません</p>
-                )}
+          {/* Conversation panel */}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto">
+            {!selectedBranchData ? (
+              <div className="flex h-full items-center justify-center">
+                <p className="text-sm text-neutral-500">ブランチを選択してください</p>
+              </div>
+            ) : selectedBranchData.nodes.length === 0 ? (
+              <div className="flex h-full items-center justify-center">
+                <p className="text-sm text-neutral-500">このブランチにはノードがありません</p>
+              </div>
+            ) : (
+              <div className="mx-auto max-w-3xl px-6 py-6">
+                {/* Branch name header */}
+                <div className="mb-6 flex items-center gap-2">
+                  <GitBranch size={14} className="text-neutral-500" />
+                  <span className="text-sm font-medium text-neutral-300">{selectedBranchData.name}</span>
+                  <span className="text-xs text-neutral-500">({selectedBranchData.nodes.length} nodes)</span>
+                </div>
+
+                {/* Messages */}
                 {selectedBranchData.nodes.map((node) => (
                   <div key={node.id}>
-                    <MessageBubble role="user" content={node.userMessage} timestamp={node.originalCreatedAt} />
-                    <MessageBubble role="ai" content={node.aiResponse} model={node.model} timestamp={node.originalCreatedAt} />
+                    {node.userMessage && (
+                      <MessageBubble role="user" content={node.userMessage} timestamp={node.originalCreatedAt} />
+                    )}
+                    {node.aiResponse && (
+                      <MessageBubble role="ai" content={node.aiResponse} model={node.model} timestamp={node.originalCreatedAt} />
+                    )}
                   </div>
                 ))}
               </div>
             )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

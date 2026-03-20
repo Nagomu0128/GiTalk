@@ -14,19 +14,29 @@ export function MessageBubble({ role, content, model, timestamp }: MessageBubble
   const sanitized = DOMPurify.sanitize(content);
   const time = timestamp ? new Date(timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '';
 
-  return (
-    <div className={`flex ${role === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
-      <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-        role === 'user'
-          ? 'bg-blue-600 text-white'
-          : 'bg-gray-100 text-gray-900'
-      }`}>
-        <div className="mb-1 flex items-center gap-2 text-xs opacity-70">
-          <span>{role === 'user' ? '👤' : '🤖'}</span>
-          {model && role === 'ai' && <span>{model}</span>}
-          {time && <span>{time}</span>}
+  if (role === 'user') {
+    return (
+      <div className="mb-4 flex justify-end">
+        <div className="max-w-[80%] rounded-2xl bg-neutral-800 px-4 py-3 text-sm text-neutral-200">
+          {content}
         </div>
-        <div className={`prose prose-sm max-w-none ${role === 'user' ? 'prose-invert' : ''}`}>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-4 flex items-start gap-2">
+      <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-700 text-sm font-bold text-neutral-300">
+        G
+      </div>
+      <div className="max-w-[80%] rounded-2xl bg-neutral-800 px-4 py-3 text-sm text-neutral-300">
+        {model && (
+          <div className="mb-1 flex items-center gap-2 text-xs text-neutral-500">
+            {model && <span>{model}</span>}
+            {time && <span>{time}</span>}
+          </div>
+        )}
+        <div className="prose prose-sm prose-invert max-w-none">
           <ReactMarkdown>{sanitized}</ReactMarkdown>
         </div>
       </div>

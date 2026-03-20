@@ -51,9 +51,9 @@ export function ChatView({ onSend }: ChatViewProps) {
 
   return (
     <div className="flex h-full flex-col">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
         {isEmpty && !isStreaming && (
-          <div className="flex h-full items-center justify-center text-gray-400">
+          <div className="flex h-full items-center justify-center text-neutral-500">
             <p>メッセージを送信して会話を始めましょう</p>
           </div>
         )}
@@ -74,21 +74,24 @@ export function ChatView({ onSend }: ChatViewProps) {
           </div>
         ))}
 
-        {/* 送信直後: ユーザーメッセージを即座に表示 */}
+        {/* Pending user message + streaming */}
         {pendingUserMessage && (
           <>
             <MessageBubble role="user" content={pendingUserMessage} />
             {streamingContent ? (
               <MessageBubble role="ai" content={streamingContent} />
             ) : (
-              <div className="mb-4 flex justify-start">
-                <div className="rounded-2xl bg-gray-100 px-4 py-3">
+              <div className="mb-4 flex items-start gap-2">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-700 text-sm font-bold text-neutral-300">
+                  G
+                </div>
+                <div className="rounded-2xl bg-neutral-800 px-4 py-3">
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-gray-400">🤖 AIが考えています</span>
+                    <span className="text-xs text-neutral-500">考えています</span>
                     <span className="inline-flex gap-1">
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '0ms' }} />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '150ms' }} />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '300ms' }} />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-500" style={{ animationDelay: '0ms' }} />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-500" style={{ animationDelay: '150ms' }} />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-500" style={{ animationDelay: '300ms' }} />
                     </span>
                   </div>
                 </div>
