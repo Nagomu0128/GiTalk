@@ -83,4 +83,4 @@ export const CHERRY_PICK_ARROW_COLOR = '#f59e0b';
 export const MERGE_LABEL_WIDTH = 120;
 
 export const CONTEXT_MENU_ITEMS = ['read', 'switch', 'cherry-pick', 'new branch'] as const;
-export const BRANCH_MENU_ITEMS = ['rename', 'merge', 'merge to', 'reset', 'diff', 'clone'] as const;
+export const BRANCH_MENU_ITEMS = ['rename', 'merge', 'diff'] as const;
