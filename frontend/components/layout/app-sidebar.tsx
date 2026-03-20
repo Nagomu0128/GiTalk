@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { PenLine, Search, LayoutDashboard, ChevronLeft, FolderGit2, LogOut } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import Image from 'next/image';
@@ -31,6 +32,14 @@ export const AppSidebar = ({
   readonly user: UserInfo | null;
 }) => {
   const [searchOpen, setSearchOpen] = useState(false);
+  const pathname = usePathname();
+
+  const navItems = [
+    { icon: Search, label: '検索', onClick: () => setSearchOpen(true), active: false },
+    { icon: PenLine, label: '新規チャットを作る', onClick: onNewChat, active: false },
+    { icon: LayoutDashboard, label: '会話一覧', onClick: onDashboard, active: pathname === '/dashboard' },
+    { icon: FolderGit2, label: 'リポジトリ', onClick: onRepositories, active: pathname === '/dashboard/repositories' },
+  ];
 
   return (
     <>
@@ -56,37 +65,20 @@ export const AppSidebar = ({
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 px-2">
-          <button
-            onClick={onNewChat}
-            className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
-          >
-            <PenLine size={16} className="shrink-0" />
-            {!collapsed && <span>新規チャットを作る</span>}
-          </button>
-
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
-          >
-            <Search size={16} className="shrink-0" />
-            {!collapsed && <span>検索</span>}
-          </button>
-
-          <button
-            onClick={onDashboard}
-            className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
-          >
-            <LayoutDashboard size={16} className="shrink-0" />
-            {!collapsed && <span>会話一覧</span>}
-          </button>
-
-          <button
-            onClick={onRepositories}
-            className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
-          >
-            <FolderGit2 size={16} className="shrink-0" />
-            {!collapsed && <span>リポジトリ</span>}
-          </button>
+          {navItems.map((item) => (
+            <button
+              key={item.label}
+              onClick={item.onClick}
+              className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors ${
+                item.active
+                  ? 'bg-neutral-800 text-white font-medium'
+                  : 'text-neutral-300 hover:bg-neutral-800'
+              }`}
+            >
+              <item.icon size={16} className="shrink-0" />
+              {!collapsed && <span>{item.label}</span>}
+            </button>
+          ))}
         </nav>
 
         {/* User info */}
