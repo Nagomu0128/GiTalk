@@ -251,7 +251,10 @@ export default function TreePage() {
               method: 'POST', headers,
               body: JSON.stringify({ branch_id: targetNode.branchId }),
             });
-            if (res.ok) { await refetchAll(); }
+            if (res.ok) {
+              setConversation((prev) => prev ? { ...prev, activeBranchId: targetNode.branchId } : prev);
+              await refetchAll();
+            }
           } catch (err) { console.error('Switch error:', err); }
         };
         doSwitch();
