@@ -58,7 +58,7 @@ export function ChatView({ onSend }: ChatViewProps) {
         <div className="mx-auto max-w-3xl">
 
         {branchNodes.map((node) => (
-          <div key={node.id}>
+          <div key={node.id} id={`node-${node.id}`}>
             <MessageBubble
               role="user"
               content={node.userMessage}

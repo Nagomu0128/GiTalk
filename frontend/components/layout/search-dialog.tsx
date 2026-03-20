@@ -41,10 +41,13 @@ type SearchResults = {
 export const SearchDialog = ({
   open,
   onOpenChange,
+  conversationId,
 }: {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
+  readonly conversationId?: string;
 }) => {
+  const isConversationScope = !!conversationId;
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,8 +74,14 @@ export const SearchDialog = ({
     setSearched(true);
     try {
       const token = await user?.getIdToken();
+      const params = new URLSearchParams({
+        q: trimmed,
+        scope: isConversationScope ? 'nodes' : 'all',
+        limit: '20',
+      });
+      if (conversationId) params.set('conversation_id', conversationId);
       const res = await fetch(
-        `${API}/v1/search?q=${encodeURIComponent(trimmed)}&scope=all&limit=20`,
+        `${API}/v1/search?${params.toString()}`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       if (res.ok) {
@@ -83,14 +92,61 @@ export const SearchDialog = ({
     } finally {
       setLoading(false);
     }
-  }, [query, user]);
+  }, [query, user, isConversationScope, conversationId]);
+
+  const highlightText = useCallback((container: HTMLElement, searchText: string) => {
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    const lowerSearch = searchText.toLowerCase();
+    const matches: { node: Text; index: number }[] = [];
+
+    let node: Text | null;
+    while ((node = walker.nextNode() as Text | null)) {
+      const idx = node.textContent?.toLowerCase().indexOf(lowerSearch) ?? -1;
+      if (idx >= 0) matches.push({ node, index: idx });
+    }
+
+    const marks: HTMLElement[] = [];
+    matches.forEach(({ node: textNode, index }) => {
+      const range = document.createRange();
+      range.setStart(textNode, index);
+      range.setEnd(textNode, index + searchText.length);
+      const mark = document.createElement('mark');
+      mark.className = 'bg-yellow-400/60 text-inherit rounded-sm px-0.5';
+      range.surroundContents(mark);
+      marks.push(mark);
+    });
+
+    if (marks[0]) {
+      marks[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // 3秒後にハイライト解除
+    setTimeout(() => {
+      marks.forEach((mark) => {
+        const parent = mark.parentNode;
+        if (!parent) return;
+        parent.replaceChild(document.createTextNode(mark.textContent ?? ''), mark);
+        parent.normalize();
+      });
+    }, 3000);
+  }, []);
 
   const handleNavigate = useCallback(
-    (conversationId: string) => {
+    (targetConversationId: string, nodeId?: string) => {
       onOpenChange(false);
-      router.push(`/conversation/${conversationId}`);
+
+      if (isConversationScope && nodeId) {
+        setTimeout(() => {
+          const el = document.getElementById(`node-${nodeId}`);
+          if (!el) return;
+          highlightText(el, query.trim());
+        }, 100);
+        return;
+      }
+
+      router.push(`/conversation/${targetConversationId}`);
     },
-    [onOpenChange, router],
+    [onOpenChange, router, isConversationScope, highlightText, query],
   );
 
   const handleKeyDown = useCallback(
@@ -109,7 +165,9 @@ export const SearchDialog = ({
         className="!max-w-2xl overflow-hidden border-neutral-500 bg-neutral-700 p-6 text-neutral-100 shadow-2xl shadow-black/60"
       >
         <DialogHeader>
-          <DialogTitle className="text-lg text-neutral-100">検索</DialogTitle>
+          <DialogTitle className="text-lg text-neutral-100">
+            {isConversationScope ? 'この会話内を検索' : '検索'}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="flex items-center gap-3">
@@ -123,7 +181,7 @@ export const SearchDialog = ({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="会話やメッセージを検索..."
+              placeholder={isConversationScope ? 'この会話内のメッセージを検索...' : '会話やメッセージを検索...'}
               className="h-10 border-neutral-500 bg-neutral-600 pl-9 text-neutral-100 placeholder:text-neutral-400 focus-visible:border-blue-400 focus-visible:ring-blue-400/30"
             />
           </div>
@@ -148,7 +206,7 @@ export const SearchDialog = ({
               </p>
             ) : (
               <div className="space-y-5">
-                {results && results.conversations.length > 0 && (
+                {!isConversationScope && results && results.conversations.length > 0 && (
                   <div>
                     <h4 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">
                       会話
@@ -177,7 +235,7 @@ export const SearchDialog = ({
                       {results.nodes.map((node) => (
                         <button
                           key={node.id}
-                          onClick={() => handleNavigate(node.conversation_id)}
+                          onClick={() => handleNavigate(node.conversation_id, node.id)}
                           className="block w-full min-w-0 overflow-hidden rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-neutral-600"
                         >
                           <div className="flex min-w-0 items-center gap-1.5 text-xs text-neutral-200">

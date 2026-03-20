@@ -11,6 +11,7 @@ import { MergeDialog } from '@/app/conversation/_compornents/merge-dialog';
 import { DiffView } from '@/app/conversation/_compornents/diff-view';
 import { CreateBranchDialog } from '@/app/conversation/_compornents/create-branch-dialog';
 import { PushDialog } from '@/app/conversation/_compornents/push-dialog';
+import { SearchDialog } from '@/components/layout/search-dialog';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useConversationApi } from '@/app/conversation/_hooks/use-conversation-api';
@@ -27,6 +28,7 @@ export default function ConversationPage() {
   const nodes = useConversationStore((s) => s.nodes);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [convSearchOpen, setConvSearchOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
 
   const { getHeaders, refetchAll } = useConversationApi(conversationId);
@@ -86,7 +88,7 @@ export default function ConversationPage() {
         <ConversationHeader
           title={conversation.title}
           onBack={() => router.push(`/tree/${conversationId}`)}
-          onSearch={() => console.log('Search')}
+          onSearch={() => setConvSearchOpen(true)}
           onHelp={() => console.log('Help')}
           onMore={dialogs.openPushDialog}
           branchSelector={
@@ -138,6 +140,12 @@ export default function ConversationPage() {
           onClose={closeBranchDialog}
         />
       )}
+
+      <SearchDialog
+        open={convSearchOpen}
+        onOpenChange={setConvSearchOpen}
+        conversationId={conversationId}
+      />
     </div>
   );
 }

@@ -9,6 +9,7 @@ searchRouter.get('/', async (c) => {
   const query = c.req.query('q');
   const scope = c.req.query('scope') || 'all';
   const limit = Math.min(Number(c.req.query('limit')) || 20, 100);
+  const conversationId = c.req.query('conversation_id') || undefined;
 
   if (!query || query.trim().length === 0) {
     return c.json({ error: { code: 'BAD_REQUEST', message: 'Search query (q) is required' } }, 400);
@@ -23,7 +24,7 @@ searchRouter.get('/', async (c) => {
       ? searchInfra.searchConversations(user.dbUser.id, trimmedQuery, limit)
       : Promise.resolve({ isOk: () => true, value: [] } as { isOk: () => true; value: ReadonlyArray<unknown> }),
     searchNodes
-      ? searchInfra.searchNodes(user.dbUser.id, trimmedQuery, limit)
+      ? searchInfra.searchNodes(user.dbUser.id, trimmedQuery, limit, conversationId)
       : Promise.resolve({ isOk: () => true, value: [] } as { isOk: () => true; value: ReadonlyArray<unknown> }),
   ]);
 
