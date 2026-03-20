@@ -325,7 +325,20 @@ export default function ConversationPage() {
       <Sidebar
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed((prev) => !prev)}
-        onNewChat={() => console.log('New chat')}
+        onNewChat={async () => {
+          try {
+            const token = await user?.getIdToken();
+            if (!token) return;
+            const res = await fetch('/api/v1/conversations', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title: '新しい会話' }),
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.id) router.push(`/conversation/${data.id}`);
+          } catch (error) { console.error(error); }
+        }}
         onSearch={() => console.log('Search')}
         onDashboard={handleDashboard}
         onRepositories={() => router.push('/dashboard/repositories')}
