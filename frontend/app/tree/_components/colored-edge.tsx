@@ -37,30 +37,15 @@ export const ColoredEdgeComponent = memo(({
     const path = `M ${sourceX} ${exitY} C ${sourceX} ${midY}, ${targetX} ${midY}, ${targetX} ${entryY}`;
 
     return (
-      <>
-        <defs>
-          <marker
-            id={markerId}
-            markerWidth="8"
-            markerHeight="6"
-            refX="7"
-            refY="3"
-            orient="auto"
-          >
-            <polygon points="0 0, 8 3, 0 6" fill={edgeColor} />
-          </marker>
-        </defs>
-        <path
-          id={id}
-          d={path}
-          fill="none"
-          stroke={edgeColor}
-          strokeWidth={strokeWidth}
-          strokeDasharray="6 4"
-          markerEnd={`url(#${markerId})`}
-          style={{ transition: 'stroke 0.2s' }}
-        />
-      </>
+      <path
+        id={id}
+        d={path}
+        fill="none"
+        stroke={edgeColor}
+        strokeWidth={strokeWidth}
+        strokeDasharray="6 4"
+        style={{ transition: 'stroke 0.2s' }}
+      />
     );
   }
 
