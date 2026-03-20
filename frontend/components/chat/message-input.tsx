@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { MessageSquare, ChevronDown } from 'lucide-react';
 
 type MessageInputProps = {
   readonly onSend: (message: string, model: string, contextMode: string) => void;
@@ -18,6 +19,7 @@ export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
   const [message, setMessage] = useState('');
   const [model, setModel] = useState<string>(MODELS[0]);
   const [contextMode, setContextMode] = useState<string>('summary');
+  const [showOptions, setShowOptions] = useState(false);
 
   const handleSubmit = useCallback(() => {
     const trimmed = message.trim();
@@ -28,7 +30,7 @@ export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+      if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
         e.preventDefault();
         handleSubmit();
       }
@@ -37,22 +39,14 @@ export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
   );
 
   return (
-    <div className="border-t bg-white p-4">
-      <textarea
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="メッセージを入力..."
-        disabled={disabled}
-        rows={3}
-        className="w-full resize-none rounded-lg border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
-      />
-      <div className="mt-2 flex items-center justify-between">
-        <div className="flex gap-2">
+    <div className="shrink-0 px-8 pb-6 pt-2">
+      {/* Options row */}
+      {showOptions && (
+        <div className="mb-2 flex items-center gap-2 px-4">
           <select
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            className="rounded border border-gray-300 px-2 py-1 text-xs"
+            className="rounded-lg border border-neutral-600 bg-neutral-800 px-2 py-1 text-xs text-neutral-300 outline-none"
           >
             {MODELS.map((m) => (
               <option key={m} value={m}>{m}</option>
@@ -61,19 +55,33 @@ export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
           <select
             value={contextMode}
             onChange={(e) => setContextMode(e.target.value)}
-            className="rounded border border-gray-300 px-2 py-1 text-xs"
+            className="rounded-lg border border-neutral-600 bg-neutral-800 px-2 py-1 text-xs text-neutral-300 outline-none"
           >
             {CONTEXT_MODES.map((cm) => (
               <option key={cm.value} value={cm.value}>{cm.label}</option>
             ))}
           </select>
         </div>
+      )}
+
+      {/* Input bar */}
+      <div className="flex items-center gap-3 rounded-full border border-neutral-600 bg-neutral-800 px-4 py-2.5">
+        <MessageSquare size={20} className="shrink-0 text-blue-400" />
+        <div className="h-5 w-px bg-neutral-600" />
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={disabled ? '送信中...' : 'したいことはありますか？'}
+          disabled={disabled}
+          className="flex-1 bg-transparent text-sm text-neutral-200 placeholder-neutral-500 outline-none disabled:opacity-50"
+        />
         <button
-          onClick={handleSubmit}
-          disabled={disabled || !message.trim()}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          onClick={() => setShowOptions((prev) => !prev)}
+          className="flex h-6 w-6 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-neutral-200"
         >
-          {disabled ? '送信中...' : '送信 ➤'}
+          <ChevronDown size={14} className={`transition-transform ${showOptions ? 'rotate-180' : ''}`} />
         </button>
       </div>
     </div>

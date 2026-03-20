@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { ChevronDown } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { ConversationCard } from '@/components/cards/conversation-card';
+import { SaveToRepoDialog } from '@/components/dialogs/save-to-repo-dialog';
 
 const API = '/api';
 
@@ -20,6 +22,7 @@ export default function ConversationsPage() {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
+  const [saveTarget, setSaveTarget] = useState<ConversationSummary | null>(null);
 
   const fetchConversations = useCallback(async (loadMore = false) => {
     const token = await user?.getIdToken();
@@ -65,37 +68,57 @@ export default function ConversationsPage() {
   };
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold">会話一覧</h1>
+    <div className="flex flex-1 flex-col">
+      {/* Header */}
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-700 px-6">
+        <h1 className="text-lg font-bold text-neutral-200">会話一覧</h1>
         <button
           onClick={handleNewConversation}
           className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
         >
-          + 新しい会話を始める
+          + 新しい会話
         </button>
-      </div>
+      </header>
 
-      {loading && <p className="text-sm text-gray-400">読み込み中...</p>}
-      {!loading && conversations.length === 0 && (
-        <p className="text-sm text-gray-400">まだ会話がありません。新しい会話を始めましょう。</p>
-      )}
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-8 py-6">
+        {loading && <p className="text-sm text-neutral-500">読み込み中...</p>}
+        {!loading && conversations.length === 0 && (
+          <p className="text-sm text-neutral-500">まだ会話がありません。新しい会話を始めましょう。</p>
+        )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {conversations.map((conv) => (
-          <ConversationCard key={conv.id} id={conv.id} title={conv.title} updatedAt={conv.updatedAt} onDelete={handleDelete} />
-        ))}
-      </div>
-
-      {hasMore && (
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => fetchConversations(true)}
-            className="rounded-lg border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
-          >
-            もっと読み込む
-          </button>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {conversations.map((conv) => (
+            <ConversationCard
+              key={conv.id}
+              id={conv.id}
+              title={conv.title}
+              updatedAt={conv.updatedAt}
+              onDelete={handleDelete}
+              onSave={() => setSaveTarget(conv)}
+            />
+          ))}
         </div>
+
+        {hasMore && (
+          <div className="mt-8 flex flex-col items-center gap-1">
+            <button
+              onClick={() => fetchConversations(true)}
+              className="flex flex-col items-center gap-1 text-sm text-neutral-400 transition-colors hover:text-neutral-200"
+            >
+              <span>もっと見る</span>
+              <ChevronDown size={18} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {saveTarget && (
+        <SaveToRepoDialog
+          conversationId={saveTarget.id}
+          conversationTitle={saveTarget.title}
+          onClose={() => setSaveTarget(null)}
+        />
       )}
     </div>
   );

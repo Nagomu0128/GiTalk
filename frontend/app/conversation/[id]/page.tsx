@@ -2,8 +2,8 @@
 
 import { useEffect, useCallback, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { PenLine, Search, LayoutDashboard, ChevronLeft, ArrowLeft, HelpCircle, MoreVertical, FolderGit2 } from 'lucide-react';
 import { ChatView } from '@/components/chat/chat-view';
-import { TreeView } from '@/components/tree/tree-view';
 import { BranchSelector } from '@/components/branch/branch-selector';
 import { NodeContextMenu } from '@/components/branch/node-context-menu';
 import { MergeDialog } from '@/components/dialogs/merge-dialog';
@@ -15,6 +15,129 @@ import { useChatStore } from '@/stores/chat-store';
 import { useAuthStore } from '@/stores/auth-store';
 
 const API = '/api';
+
+// --- Sidebar Component ---
+
+const Sidebar = ({
+  collapsed,
+  onToggle,
+  onNewChat,
+  onSearch,
+  onDashboard,
+  onRepositories,
+}: {
+  readonly collapsed: boolean;
+  readonly onToggle: () => void;
+  readonly onNewChat: () => void;
+  readonly onSearch: () => void;
+  readonly onDashboard: () => void;
+  readonly onRepositories: () => void;
+}) => (
+  <aside
+    className={`flex h-full shrink-0 flex-col border-r border-neutral-700 bg-neutral-950 transition-all ${
+      collapsed ? 'w-12' : 'w-64'
+    }`}
+  >
+    <button
+      onClick={onToggle}
+      className="flex h-10 items-center justify-end px-3 text-neutral-400 transition-colors hover:text-neutral-200"
+    >
+      <ChevronLeft
+        size={18}
+        className={`transition-transform ${collapsed ? 'rotate-180' : ''}`}
+      />
+    </button>
+
+    <nav className="flex flex-col gap-1 px-2">
+      <button
+        onClick={onNewChat}
+        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
+      >
+        <PenLine size={16} className="shrink-0" />
+        {!collapsed && <span>新規チャットを作る</span>}
+      </button>
+
+      <button
+        onClick={onSearch}
+        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
+      >
+        <Search size={16} className="shrink-0" />
+        {!collapsed && <span>検索</span>}
+      </button>
+
+      <button
+        onClick={onDashboard}
+        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
+      >
+        <LayoutDashboard size={16} className="shrink-0" />
+        {!collapsed && <span>Dash Board</span>}
+      </button>
+
+      <button
+        onClick={onRepositories}
+        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
+      >
+        <FolderGit2 size={16} className="shrink-0" />
+        {!collapsed && <span>リポジトリ</span>}
+      </button>
+    </nav>
+  </aside>
+);
+
+// --- Header Component ---
+
+const Header = ({
+  title,
+  onBack,
+  onSearch,
+  onHelp,
+  onMore,
+  branchSelector,
+}: {
+  readonly title: string;
+  readonly onBack: () => void;
+  readonly onSearch: () => void;
+  readonly onHelp: () => void;
+  readonly onMore: () => void;
+  readonly branchSelector: React.ReactNode;
+}) => (
+  <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-700 px-4">
+    <div className="flex items-center gap-3">
+      <button
+        onClick={onBack}
+        className="flex items-center gap-2 text-sm text-neutral-300 transition-colors hover:text-neutral-100"
+      >
+        <ArrowLeft size={16} />
+        <span>チャットに戻る</span>
+      </button>
+      <span className="text-neutral-600">|</span>
+      <span className="truncate text-sm text-neutral-400">{title}</span>
+    </div>
+    <div className="flex items-center gap-2">
+      {branchSelector}
+      <button
+        onClick={onSearch}
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-600 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+      >
+        <Search size={14} />
+      </button>
+      <button
+        onClick={onHelp}
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-600 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+      >
+        <HelpCircle size={14} />
+      </button>
+      <button
+        onClick={onMore}
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-600 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+      >
+        <MoreVertical size={14} />
+      </button>
+    </div>
+  </header>
+);
+
+// --- Page Component ---
 
 export default function ConversationPage() {
   const params = useParams();
@@ -37,6 +160,7 @@ export default function ConversationPage() {
   const appendStreamingContent = useChatStore((s) => s.appendStreamingContent);
   const clearStreamingState = useChatStore((s) => s.clearStreamingState);
 
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showDiffView, setShowDiffView] = useState(false);
@@ -61,7 +185,7 @@ export default function ConversationPage() {
     setNodes(nodesData.nodes);
   }, [conversationId, getHeaders, setBranches, setNodes]);
 
-  // 会話データを取得
+  // Fetch conversation data
   useEffect(() => {
     const fetchData = async () => {
       const headers = await getHeaders();
@@ -71,8 +195,7 @@ export default function ConversationPage() {
         fetch(`${API}/v1/conversations/${conversationId}/nodes`, { headers }),
       ]);
       if (!convRes.ok) {
-        const errBody = await convRes.text();
-        console.error('Failed to load conversation:', convRes.status, errBody);
+        console.error('Failed to load conversation:', convRes.status);
         router.push('/dashboard');
         return;
       }
@@ -86,7 +209,7 @@ export default function ConversationPage() {
     fetchData();
   }, [conversationId, getHeaders, router, setBranches, setConversation, setNodes]);
 
-  // メッセージ送信
+  // Send message
   const handleSend = useCallback(
     async (message: string, model: string, contextMode: string) => {
       if (!activeBranchId) return;
@@ -124,7 +247,7 @@ export default function ConversationPage() {
     [activeBranchId, conversationId, user, setStreaming, setPendingUserMessage, clearStreamingState, appendStreamingContent, refetchAll, updateBranchHead, updateTitle],
   );
 
-  // Switch
+  // Switch branch
   const handleSwitch = useCallback(async (branchId: string) => {
     const headers = await getHeaders();
     const res = await fetch(`${API}/v1/conversations/${conversationId}/switch`, {
@@ -133,12 +256,11 @@ export default function ConversationPage() {
     if (res.ok) { setActiveBranchId(branchId); }
   }, [conversationId, getHeaders, setActiveBranchId]);
 
-  // Branch creation - open dialog
+  // Branch creation
   const handleBranchRequest = useCallback((nodeId: string) => {
     setBranchBaseNodeId(nodeId);
   }, []);
 
-  // Branch creation - submit
   const handleBranchSubmit = useCallback(async (name: string) => {
     if (!branchBaseNodeId) return;
     const headers = await getHeaders();
@@ -180,60 +302,62 @@ export default function ConversationPage() {
     else { const err = await res.json(); alert(err.error?.message ?? 'マージに失敗しました'); }
   }, [conversationId, getHeaders, refetchAll]);
 
-  // Node right-click
-  const handleNodeContextMenu = useCallback((nodeId: string, event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY, nodeId });
-  }, []);
+  // Navigation
+  const handleBack = useCallback(() => {
+    router.push(`/tree/${conversationId}`);
+  }, [router, conversationId]);
+
+  const handleDashboard = useCallback(() => {
+    router.push('/dashboard');
+  }, [router]);
 
   if (!conversation) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+      <div className="flex h-screen w-full items-center justify-center bg-neutral-900">
+        <div className="text-neutral-400">読み込み中...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen flex-col">
-      {/* ヘッダー */}
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/dashboard')} className="text-gray-500 hover:text-gray-700">← 戻る</button>
-          <h1 className="text-lg font-bold">{conversation.title}</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          {nodes.length > 0 && (
-            <>
+    <div className="flex h-screen w-full bg-neutral-900">
+      {/* Sidebar */}
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed((prev) => !prev)}
+        onNewChat={() => console.log('New chat')}
+        onSearch={() => console.log('Search')}
+        onDashboard={handleDashboard}
+        onRepositories={() => router.push('/dashboard/repositories')}
+      />
+
+      {/* Main area */}
+      <div className="flex flex-1 flex-col">
+        {/* Header */}
+        <Header
+          title={conversation.title}
+          onBack={handleBack}
+          onSearch={() => console.log('Search')}
+          onHelp={() => console.log('Help')}
+          onMore={() => setShowPushDialog(true)}
+          branchSelector={
+            nodes.length > 0 ? (
               <BranchSelector
                 onSwitch={handleSwitch}
                 onMerge={() => setShowMergeDialog(true)}
                 onDiff={() => setShowDiffView(true)}
               />
-              <button
-                onClick={() => setShowPushDialog(true)}
-                className="rounded-lg border border-gray-300 px-3 py-1 text-sm text-gray-600 hover:bg-gray-50"
-              >
-                📦 保存
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+            ) : null
+          }
+        />
 
-      {/* メインコンテンツ */}
-      <div className="flex flex-1 overflow-hidden">
-        {nodes.length > 0 && (
-          <div className="w-1/3 border-r">
-            <TreeView onNodeContextMenu={handleNodeContextMenu} />
-          </div>
-        )}
-        <div className={nodes.length > 0 ? 'flex-1' : 'w-full'}>
+        {/* Chat area */}
+        <div className="flex-1 overflow-hidden">
           <ChatView onSend={handleSend} />
         </div>
       </div>
 
-      {/* コンテキストメニュー */}
+      {/* Context menu */}
       {contextMenu && (
         <NodeContextMenu
           x={contextMenu.x}

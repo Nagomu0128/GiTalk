@@ -1,14 +1,97 @@
-import { GlobalHeader } from '@/components/layout/global-header';
-import { Sidebar } from '@/components/layout/sidebar';
+'use client';
+
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { PenLine, Search, LayoutDashboard, ChevronLeft, FolderGit2 } from 'lucide-react';
+
+const Sidebar = ({
+  collapsed,
+  onToggle,
+  onNewChat,
+  onSearch,
+  onDashboard,
+  onRepositories,
+}: {
+  readonly collapsed: boolean;
+  readonly onToggle: () => void;
+  readonly onNewChat: () => void;
+  readonly onSearch: () => void;
+  readonly onDashboard: () => void;
+  readonly onRepositories: () => void;
+}) => (
+  <aside
+    className={`flex h-full shrink-0 flex-col border-r border-neutral-700 bg-neutral-950 transition-all ${
+      collapsed ? 'w-12' : 'w-64'
+    }`}
+  >
+    <button
+      onClick={onToggle}
+      className="flex h-10 items-center justify-end px-3 text-neutral-400 transition-colors hover:text-neutral-200"
+    >
+      <ChevronLeft
+        size={18}
+        className={`transition-transform ${collapsed ? 'rotate-180' : ''}`}
+      />
+    </button>
+
+    <nav className="flex flex-col gap-1 px-2">
+      <button
+        onClick={onNewChat}
+        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
+      >
+        <PenLine size={16} className="shrink-0" />
+        {!collapsed && <span>新規チャットを作る</span>}
+      </button>
+
+      <button
+        onClick={onSearch}
+        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
+      >
+        <Search size={16} className="shrink-0" />
+        {!collapsed && <span>検索</span>}
+      </button>
+
+      <button
+        onClick={onDashboard}
+        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
+      >
+        <LayoutDashboard size={16} className="shrink-0" />
+        {!collapsed && <span>Dash Board</span>}
+      </button>
+
+      <button
+        onClick={onRepositories}
+        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
+      >
+        <FolderGit2 size={16} className="shrink-0" />
+        {!collapsed && <span>リポジトリ</span>}
+      </button>
+    </nav>
+  </aside>
+);
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const handleNewChat = useCallback(async () => {
+    // Placeholder - will be overridden by page
+    console.log('New chat');
+  }, []);
+
   return (
-    <div className="flex h-screen flex-col">
-      <GlobalHeader />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
-      </div>
+    <div className="flex h-screen w-full bg-neutral-900">
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed((prev) => !prev)}
+        onNewChat={handleNewChat}
+        onSearch={() => console.log('Search')}
+        onDashboard={() => router.push('/dashboard')}
+        onRepositories={() => router.push('/dashboard/repositories')}
+      />
+      <main className="flex flex-1 flex-col overflow-y-auto">
+        {children}
+      </main>
     </div>
   );
 }
