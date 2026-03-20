@@ -2,7 +2,8 @@
 
 import { useEffect, useCallback, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { PenLine, Search, LayoutDashboard, ChevronLeft, ArrowLeft, HelpCircle, MoreVertical, FolderGit2 } from 'lucide-react';
+import { ArrowLeft, HelpCircle, MoreVertical, Search } from 'lucide-react';
+import { AppSidebar } from '@/components/layout/app-sidebar';
 import { ChatView } from '@/components/chat/chat-view';
 import { BranchSelector } from '@/components/branch/branch-selector';
 import { NodeContextMenu } from '@/components/branch/node-context-menu';
@@ -16,73 +17,7 @@ import { useAuthStore } from '@/stores/auth-store';
 
 const API = '/api';
 
-// --- Sidebar Component ---
-
-const Sidebar = ({
-  collapsed,
-  onToggle,
-  onNewChat,
-  onSearch,
-  onDashboard,
-  onRepositories,
-}: {
-  readonly collapsed: boolean;
-  readonly onToggle: () => void;
-  readonly onNewChat: () => void;
-  readonly onSearch: () => void;
-  readonly onDashboard: () => void;
-  readonly onRepositories: () => void;
-}) => (
-  <aside
-    className={`flex h-full shrink-0 flex-col border-r border-neutral-700 bg-neutral-950 transition-all ${
-      collapsed ? 'w-12' : 'w-64'
-    }`}
-  >
-    <button
-      onClick={onToggle}
-      className="flex h-10 items-center justify-end px-3 text-neutral-400 transition-colors hover:text-neutral-200"
-    >
-      <ChevronLeft
-        size={18}
-        className={`transition-transform ${collapsed ? 'rotate-180' : ''}`}
-      />
-    </button>
-
-    <nav className="flex flex-col gap-1 px-2">
-      <button
-        onClick={onNewChat}
-        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
-      >
-        <PenLine size={16} className="shrink-0" />
-        {!collapsed && <span>新規チャットを作る</span>}
-      </button>
-
-      <button
-        onClick={onSearch}
-        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
-      >
-        <Search size={16} className="shrink-0" />
-        {!collapsed && <span>検索</span>}
-      </button>
-
-      <button
-        onClick={onDashboard}
-        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
-      >
-        <LayoutDashboard size={16} className="shrink-0" />
-        {!collapsed && <span>Dash Board</span>}
-      </button>
-
-      <button
-        onClick={onRepositories}
-        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
-      >
-        <FolderGit2 size={16} className="shrink-0" />
-        {!collapsed && <span>リポジトリ</span>}
-      </button>
-    </nav>
-  </aside>
-);
+// Sidebar is imported from @/components/layout/app-sidebar
 
 // --- Header Component ---
 
@@ -322,7 +257,7 @@ export default function ConversationPage() {
   return (
     <div className="flex h-screen w-full bg-neutral-900">
       {/* Sidebar */}
-      <Sidebar
+      <AppSidebar
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed((prev) => !prev)}
         onNewChat={async () => {
@@ -342,6 +277,7 @@ export default function ConversationPage() {
         onSearch={() => console.log('Search')}
         onDashboard={handleDashboard}
         onRepositories={() => router.push('/dashboard/repositories')}
+        user={user ? { displayName: user.displayName, email: user.email, photoURL: user.photoURL } : null}
       />
 
       {/* Main area */}
