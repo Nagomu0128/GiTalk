@@ -74,4 +74,4 @@ export const HIGHLIGHT_COLOR = '#e05050';
 export const MERGE_LABEL_WIDTH = 120;
 
 export const CONTEXT_MENU_ITEMS = ['read', 'switch', 'cherry-pick', 'new branch'] as const;
-export const BRANCH_MENU_ITEMS = ['merge', 'merge to', 'reset', 'diff', 'clone'] as const;
+export const BRANCH_MENU_ITEMS = ['rename', 'merge', 'merge to', 'reset', 'diff', 'clone'] as const;
