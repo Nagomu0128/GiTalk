@@ -32,13 +32,13 @@ import { TreeFlowInner } from '../_components/tree-flow';
 import { DiffView } from '@/app/conversation/_compornents/diff-view';
 
 const LoadingView = () => (
-  <div className="flex h-screen w-full items-center justify-center bg-neutral-50 dark:bg-neutral-900">
+  <div className="flex h-screen w-full items-center justify-center bg-neutral-100 dark:bg-neutral-900">
     <div className="text-neutral-400">読み込み中...</div>
   </div>
 );
 
 const ErrorView = ({ message, onBack }: { readonly message: string; readonly onBack: () => void }) => (
-  <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-neutral-50 dark:bg-neutral-900">
+  <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-neutral-100 dark:bg-neutral-900">
     <div className="text-neutral-400">{message}</div>
     <Button variant="outline" onClick={onBack}>
       会話一覧に戻る
@@ -434,7 +434,7 @@ export default function TreePage() {
   if (error) return <ErrorView message={error} onBack={() => router.push('/dashboard')} />;
 
   return (
-    <div className="flex h-screen w-full bg-neutral-50 dark:bg-neutral-900">
+    <div className="flex h-screen w-full bg-neutral-100 dark:bg-neutral-900">
       <AppSidebar
         collapsed={sidebarCollapsed}
         onToggle={handleToggleSidebar}

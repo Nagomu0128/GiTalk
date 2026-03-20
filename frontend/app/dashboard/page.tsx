@@ -94,7 +94,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col">
       {/* Header */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 px-6 dark:border-neutral-700">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-300 px-6 dark:border-neutral-700">
         <div className="flex items-center gap-3">
           <ThemedLogo />
           <h1 className="text-lg font-bold text-neutral-800 dark:text-neutral-200">会話一覧</h1>

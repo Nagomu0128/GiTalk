@@ -162,7 +162,7 @@ export const SearchDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="!max-w-2xl overflow-hidden border-neutral-300 bg-white p-6 text-neutral-900 shadow-2xl dark:border-neutral-500 dark:bg-neutral-700 dark:text-neutral-100 dark:shadow-black/60"
+        className="!max-w-2xl overflow-hidden border-neutral-300 bg-neutral-50 p-6 text-neutral-900 shadow-2xl dark:border-neutral-500 dark:bg-neutral-700 dark:text-neutral-100 dark:shadow-black/60"
       >
         <DialogHeader>
           <DialogTitle className="text-lg text-neutral-900 dark:text-neutral-100">
@@ -188,7 +188,7 @@ export const SearchDialog = ({
           <button
             onClick={handleSearch}
             disabled={loading || !query.trim()}
-            className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-neutral-600 px-4 py-2 text-sm font-medium text-neutral-200 transition-colors hover:bg-neutral-500 disabled:opacity-50"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : '検索'}
           </button>

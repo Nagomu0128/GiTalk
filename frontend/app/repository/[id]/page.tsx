@@ -50,7 +50,7 @@ const Header = ({
   readonly onSearch: () => void;
   readonly onHelp: () => void;
 }) => (
-  <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-700">
+  <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-300 px-4 dark:border-neutral-700">
     <div className="flex items-center gap-3">
       <button
         onClick={onBack}
@@ -184,7 +184,7 @@ export default function RepositoryDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-neutral-50 dark:bg-neutral-900">
+      <div className="flex h-screen w-full items-center justify-center bg-neutral-100 dark:bg-neutral-900">
         <div className="text-neutral-500 dark:text-neutral-400">読み込み中...</div>
       </div>
     );
@@ -193,7 +193,7 @@ export default function RepositoryDetailPage() {
   if (!repo) return null;
 
   return (
-    <div className="flex h-screen w-full bg-neutral-50 dark:bg-neutral-900">
+    <div className="flex h-screen w-full bg-neutral-100 dark:bg-neutral-900">
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
         <Header

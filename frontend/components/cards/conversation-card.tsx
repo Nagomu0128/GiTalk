@@ -33,7 +33,7 @@ export function ConversationCard({ id, title, updatedAt, description, onDelete, 
 
   return (
     <>
-      <div className="relative rounded-xl bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:bg-neutral-800 dark:shadow-none dark:hover:bg-neutral-750">
+      <div className="relative rounded-xl bg-white p-5 shadow-md border border-neutral-200 transition-shadow hover:shadow-md dark:bg-neutral-800 dark:shadow-none dark:hover:bg-neutral-750">
         <button
           onClick={() => router.push(`/conversation/${id}`)}
           className="w-full text-left"

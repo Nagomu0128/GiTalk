@@ -23,7 +23,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-neutral-50 dark:bg-neutral-950">
+    <div className="relative flex min-h-screen items-center justify-center bg-neutral-100 dark:bg-neutral-950">
       <div
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.07]"
         style={{ backgroundImage: `url('${bg}')` }}

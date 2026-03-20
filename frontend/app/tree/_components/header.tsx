@@ -9,7 +9,7 @@ export const Header = ({
   readonly onBack: () => void;
   readonly onHelp: () => void;
 }) => (
-  <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-700">
+  <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-300 px-4 dark:border-neutral-700">
     <button
       onClick={onBack}
       className="flex items-center gap-2 text-sm text-neutral-800 transition-colors hover:text-neutral-950 dark:text-neutral-300 dark:hover:text-neutral-100"

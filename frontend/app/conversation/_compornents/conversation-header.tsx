@@ -17,7 +17,7 @@ export const ConversationHeader = ({
   readonly onMore: () => void;
   readonly branchSelector: React.ReactNode;
 }) => (
-  <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-700">
+  <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-300 px-4 dark:border-neutral-700">
     <div className="flex items-center gap-3">
       <button
         onClick={onBack}

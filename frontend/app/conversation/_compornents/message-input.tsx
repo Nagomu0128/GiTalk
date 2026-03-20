@@ -12,6 +12,8 @@ type MessageInputProps = {
 const MODELS = [
   { value: 'gemini-2.5-flash', label: '2.5 Flash', description: '高速・低コスト' },
   { value: 'gemini-2.5-pro', label: '2.5 Pro', description: '高精度・推論向け' },
+  { value: 'gemini-2.0-flash', label: '2.0 Flash', description: 'バランス型' },
+  { value: 'gemini-2.0-flash-lite', label: '2.0 Flash Lite', description: '軽量・超低コスト' },
 ] as const;
 
 export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
@@ -71,7 +73,7 @@ export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
         </div>
 
         {/* Input bar */}
-        <div className="flex items-center gap-2 rounded-2xl border border-neutral-300 bg-white px-4 py-3 dark:border-neutral-600 dark:bg-neutral-800">
+        <div className="flex items-center gap-2 rounded-2xl border border-neutral-300 bg-white px-4 py-3 shadow-sm dark:border-neutral-600 dark:bg-neutral-800">
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}

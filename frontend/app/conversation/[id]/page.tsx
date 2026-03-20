@@ -79,14 +79,14 @@ export default function ConversationPage() {
 
   if (!conversation) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-neutral-50 dark:bg-neutral-900">
+      <div className="flex h-screen w-full items-center justify-center bg-neutral-100 dark:bg-neutral-900">
         <div className="text-neutral-400">読み込み中...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen w-full bg-neutral-50 dark:bg-neutral-900">
+    <div className="flex h-screen w-full bg-neutral-100 dark:bg-neutral-900">
       <AppSidebar
         collapsed={sidebarCollapsed}
         onToggle={toggleSidebar}
