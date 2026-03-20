@@ -81,51 +81,97 @@ export function PushDialog({ conversationId, onClose }: PushDialogProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">📦 リポジトリに保存</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-900 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-neutral-100">リポジトリに保存</h2>
+          <button onClick={onClose} className="text-neutral-500 transition-colors hover:text-neutral-300">✕</button>
         </div>
 
-        <div className="mb-4 flex gap-2">
-          <button onClick={() => setMode('new')} className={`rounded px-3 py-1 text-sm ${mode === 'new' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}>新規作成</button>
-          <button onClick={() => setMode('existing')} className={`rounded px-3 py-1 text-sm ${mode === 'existing' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}>既存を選択</button>
+        <div className="mb-5 flex gap-1 rounded-lg bg-neutral-800 p-1">
+          <button
+            onClick={() => setMode('new')}
+            className={`flex-1 rounded-md px-3 py-1.5 text-sm transition-colors ${mode === 'new' ? 'bg-neutral-700 text-neutral-100' : 'text-neutral-400 hover:text-neutral-300'}`}
+          >
+            新規作成
+          </button>
+          <button
+            onClick={() => setMode('existing')}
+            className={`flex-1 rounded-md px-3 py-1.5 text-sm transition-colors ${mode === 'existing' ? 'bg-neutral-700 text-neutral-100' : 'text-neutral-400 hover:text-neutral-300'}`}
+          >
+            既存を選択
+          </button>
         </div>
 
         {mode === 'new' && (
-          <div className="mb-4 space-y-3">
-            <input value={newRepoTitle} onChange={(e) => setNewRepoTitle(e.target.value)} placeholder="リポジトリ名" className="w-full rounded border px-3 py-2 text-sm" />
-            <input value={newRepoDescription} onChange={(e) => setNewRepoDescription(e.target.value)} placeholder="説明（任意）" className="w-full rounded border px-3 py-2 text-sm" />
-            <div className="flex gap-3">
-              <label className="flex items-center gap-1 text-sm"><input type="radio" checked={visibility === 'private'} onChange={() => setVisibility('private')} /> 🔒 Private</label>
-              <label className="flex items-center gap-1 text-sm"><input type="radio" checked={visibility === 'public'} onChange={() => setVisibility('public')} /> 🌐 Public</label>
+          <div className="mb-5 space-y-3">
+            <input
+              value={newRepoTitle}
+              onChange={(e) => setNewRepoTitle(e.target.value)}
+              placeholder="リポジトリ名"
+              className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-200 placeholder-neutral-500 outline-none transition-colors focus:border-neutral-500"
+            />
+            <input
+              value={newRepoDescription}
+              onChange={(e) => setNewRepoDescription(e.target.value)}
+              placeholder="説明（任意）"
+              className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-200 placeholder-neutral-500 outline-none transition-colors focus:border-neutral-500"
+            />
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 text-sm text-neutral-300">
+                <input type="radio" checked={visibility === 'private'} onChange={() => setVisibility('private')} className="accent-neutral-400" />
+                Private
+              </label>
+              <label className="flex items-center gap-2 text-sm text-neutral-300">
+                <input type="radio" checked={visibility === 'public'} onChange={() => setVisibility('public')} className="accent-neutral-400" />
+                Public
+              </label>
             </div>
           </div>
         )}
 
         {mode === 'existing' && (
-          <div className="mb-4">
-            <select value={selectedRepoId} onChange={(e) => setSelectedRepoId(e.target.value)} className="w-full rounded border px-3 py-2 text-sm">
+          <div className="mb-5">
+            <select
+              value={selectedRepoId}
+              onChange={(e) => setSelectedRepoId(e.target.value)}
+              className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-200 outline-none transition-colors focus:border-neutral-500"
+            >
               <option value="">リポジトリを選択...</option>
               {repos.map((r) => <option key={r.id} value={r.id}>{r.title}</option>)}
             </select>
           </div>
         )}
 
-        <div className="mb-4">
-          <p className="mb-2 text-sm font-medium text-gray-700">ブランチ選択</p>
-          {branches.map((branch) => (
-            <label key={branch.id} className="flex items-center gap-2 py-1 text-sm">
-              <input type="checkbox" checked={selectedBranches.has(branch.id)} onChange={() => toggleBranch(branch.id)} />
-              🌿 {branch.name}
-            </label>
-          ))}
+        <div className="mb-5">
+          <p className="mb-2 text-sm font-medium text-neutral-400">ブランチ選択</p>
+          <div className="space-y-1">
+            {branches.map((branch) => (
+              <label key={branch.id} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-neutral-300 transition-colors hover:bg-neutral-800">
+                <input
+                  type="checkbox"
+                  checked={selectedBranches.has(branch.id)}
+                  onChange={() => toggleBranch(branch.id)}
+                  className="accent-neutral-400"
+                />
+                {branch.name}
+              </label>
+            ))}
+          </div>
         </div>
 
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100">キャンセル</button>
-          <button onClick={handlePush} disabled={loading || (mode === 'existing' && !selectedRepoId) || selectedBranches.size === 0} className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50">
+          <button
+            onClick={onClose}
+            className="rounded-lg px-4 py-2 text-sm text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={handlePush}
+            disabled={loading || (mode === 'existing' && !selectedRepoId) || selectedBranches.size === 0}
+            className="rounded-lg bg-neutral-200 px-4 py-2 text-sm font-medium text-neutral-900 transition-colors hover:bg-white disabled:opacity-40"
+          >
             {loading ? '保存中...' : '保存する'}
           </button>
         </div>

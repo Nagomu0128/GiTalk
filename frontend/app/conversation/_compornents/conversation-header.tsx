@@ -22,7 +22,7 @@ export const ConversationHeader = ({
         className="flex items-center gap-2 text-sm text-neutral-300 transition-colors hover:text-neutral-100"
       >
         <ArrowLeft size={16} />
-        <span>ツリーに戻る</span>
+        <span>ツリーを表示する</span>
       </button>
       <span className="text-neutral-600">|</span>
       <span className="truncate text-sm text-neutral-400">{title}</span>

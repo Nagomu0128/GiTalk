@@ -11,7 +11,7 @@ export const ChatInput = ({
 }) => (
   <div className="shrink-0 px-8 pb-6 pt-2">
     <div className="flex items-center gap-3 rounded-full border border-neutral-600 bg-neutral-800 px-4 py-2.5">
-      <MessageSquare size={20} className="shrink-0 text-blue-400" />
+      <MessageSquare size={20} className="shrink-0 text-white" />
       <div className="h-5 w-px bg-neutral-600" />
       <input
         type="text"
