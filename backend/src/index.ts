@@ -11,6 +11,7 @@ import { nodesRouter } from './routes/nodes.js';
 import { chatRouter } from './routes/chat.js';
 import { gitOperationsRouter } from './routes/git-operations.js';
 import { repositoriesRouter } from './routes/repositories.js';
+import { usersRouter } from './routes/users.js';
 import { searchRouter } from './routes/search.js';
 import { appLogger } from './shared/logger.js';
 
@@ -53,6 +54,7 @@ app.get('/health/db', async (c) => {
 // Routes with own auth handling (must be before global authMiddleware)
 // ============================================================
 app.route('/v1/repositories', repositoriesRouter);
+app.route('/v1/users', usersRouter);
 
 // ============================================================
 // Auth-protected routes

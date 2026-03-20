@@ -50,6 +50,25 @@ export const listRepositoriesByOwner = (
     DBRepositoryError.handle,
   );
 
+export const listPublicRepositoriesByOwner = (
+  ownerId: string,
+  cursor?: string,
+  limit: number = 20,
+): ResultAsync<ReadonlyArray<RepositoryRecord>, DBRepositoryError> =>
+  ResultAsync.fromPromise(
+    db.query.repositories.findMany({
+      where: and(
+        eq(repositories.ownerId, ownerId),
+        eq(repositories.visibility, 'public'),
+        isNull(repositories.deletedAt),
+        ...(cursor ? [gt(repositories.id, cursor)] : []),
+      ),
+      orderBy: [desc(repositories.updatedAt)],
+      limit,
+    }),
+    DBRepositoryError.handle,
+  );
+
 export const updateRepository = (
   repositoryId: string,
   ownerId: string,

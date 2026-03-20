@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, ilike } from 'drizzle-orm';
 import { ResultAsync } from 'neverthrow';
 import { db } from '../db/client.js';
 import { users } from '../db/schema.js';
@@ -15,6 +15,28 @@ export const findUserByFirebaseUid = (
   ResultAsync.fromPromise(
     db.query.users.findFirst({
       where: eq(users.firebaseUid, firebaseUid),
+    }),
+    DBUserError.handle,
+  );
+
+export const findUserById = (
+  userId: string,
+): ResultAsync<UserRecord | undefined, DBUserError> =>
+  ResultAsync.fromPromise(
+    db.query.users.findFirst({
+      where: eq(users.id, userId),
+    }),
+    DBUserError.handle,
+  );
+
+export const searchUsersByName = (
+  query: string,
+  limit: number = 10,
+): ResultAsync<ReadonlyArray<UserRecord>, DBUserError> =>
+  ResultAsync.fromPromise(
+    db.query.users.findMany({
+      where: ilike(users.displayName, `%${query}%`),
+      limit,
     }),
     DBUserError.handle,
   );
