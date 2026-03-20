@@ -15,11 +15,7 @@ export const DotNodeComponent = memo(({ data }: NodeProps<RFNode<DotNodeData>>) 
       }`}
     >
       <Handle type="target" position={Position.Left} className="!bg-transparent !border-0 !w-0 !h-0" />
-      {data.isMergeDot ? (
-        <span className={`block h-[8px] w-[8px] rounded-full border-[2px] border-violet-500 bg-transparent transition-all`} />
-      ) : (
-        <span className={`block h-[10px] w-[10px] group-hover:h-[14px] group-hover:w-[14px] rounded-full ${dotColor} transition-all`} />
-      )}
+      <span className={`block ${data.isMergeDot ? 'h-[6px] w-[6px]' : 'h-[10px] w-[10px] group-hover:h-[14px] group-hover:w-[14px]'} rounded-full ${dotColor} transition-all`} />
       <Handle type="source" position={Position.Right} className="!bg-transparent !border-0 !w-0 !h-0" />
     </div>
   );
