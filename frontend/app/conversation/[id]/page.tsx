@@ -19,6 +19,7 @@ import { useConversationApi } from '@/app/conversation/_hooks/use-conversation-a
 import { useChatHandler } from '@/app/conversation/_hooks/use-chat-handler';
 import { useBranchActions } from '@/app/conversation/_hooks/use-branch-actions';
 import { useDialogState } from '@/app/conversation/_hooks/use-dialog-state';
+import { useSidebar } from '@/app/conversation/_hooks/use-sidebar';
 
 export default function ConversationPage() {
   const params = useParams();
@@ -28,7 +29,7 @@ export default function ConversationPage() {
   const conversation = useConversationStore((s) => s.conversation);
   const nodes = useConversationStore((s) => s.nodes);
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { collapsed: sidebarCollapsed, toggle: toggleSidebar } = useSidebar();
   const [convSearchOpen, setConvSearchOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
 
@@ -88,7 +89,7 @@ export default function ConversationPage() {
     <div className="flex h-screen w-full bg-neutral-900">
       <AppSidebar
         collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed((prev) => !prev)}
+        onToggle={toggleSidebar}
         onNewChat={handleNewChat}
         onDashboard={() => router.push('/dashboard')}
         onRepositories={() => router.push('/dashboard/repositories')}
