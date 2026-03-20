@@ -233,7 +233,7 @@ export const buildReactFlowNodes = (
     const mergeDotId = `merge-dot-${leafNode.id}-${node.id}`;
     mergeDotNodes.push({
       id: mergeDotId, type: 'dotNode',
-      position: { x: leafPos.x + COLUMN_GAP * 0.5 - 3, y: leafPos.y - 3 },
+      position: { x: leafPos.x + COLUMN_GAP * 0.5 - 3, y: leafPos.y - 1 },
       data: { dotColor: 'bg-violet-500', isSelected: false, gitNodeId: mergeDotId, isMergeDot: true, isActiveBranch: false },
       draggable: false, connectable: false,
     });
