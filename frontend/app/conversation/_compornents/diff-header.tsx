@@ -22,11 +22,11 @@ export const DiffHeader = ({
   onCompare,
   onClose,
 }: DiffHeaderProps) => (
-  <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-700 px-4">
+  <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-700">
     <div className="flex items-center gap-3">
       <button
         onClick={onClose}
-        className="flex items-center gap-2 text-sm text-neutral-300 transition-colors hover:text-neutral-100"
+        className="flex items-center gap-2 text-sm text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
       >
         <ArrowLeft size={16} />
         <span>チャットに戻る</span>
@@ -41,7 +41,7 @@ export const DiffHeader = ({
         <select
           value={branchAId}
           onChange={(e) => onBranchAChange(e.target.value)}
-          className="rounded-lg border border-neutral-600 bg-neutral-800 px-2 py-1 text-xs text-neutral-300 outline-none"
+          className="rounded-lg border border-neutral-300 bg-white px-2 dark:border-neutral-600 dark:bg-neutral-800 py-1 text-xs text-neutral-300 outline-none"
         >
           {branches.map((b) => (
             <option key={b.id} value={b.id}>{b.name}</option>
@@ -56,7 +56,7 @@ export const DiffHeader = ({
         <select
           value={branchBId}
           onChange={(e) => onBranchBChange(e.target.value)}
-          className="rounded-lg border border-neutral-600 bg-neutral-800 px-2 py-1 text-xs text-neutral-300 outline-none"
+          className="rounded-lg border border-neutral-300 bg-white px-2 dark:border-neutral-600 dark:bg-neutral-800 py-1 text-xs text-neutral-300 outline-none"
         >
           <option value="">ブランチを選択...</option>
           {branches.filter((b) => b.id !== branchAId).map((b) => (

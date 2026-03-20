@@ -70,8 +70,8 @@ export default function ConversationsPage() {
   return (
     <div className="flex flex-1 flex-col">
       {/* Header */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-700 px-6">
-        <h1 className="text-lg font-bold text-neutral-200">会話一覧</h1>
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 px-6 dark:border-neutral-700">
+        <h1 className="text-lg font-bold text-neutral-800 dark:text-neutral-200">会話一覧</h1>
         <button
           onClick={handleNewConversation}
           className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"

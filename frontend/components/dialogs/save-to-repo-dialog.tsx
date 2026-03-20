@@ -97,9 +97,9 @@ export function SaveToRepoDialog({ conversationId, conversationTitle, onClose }:
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-2xl bg-neutral-800 p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 dark:bg-neutral-800 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-neutral-200">リポジトリに保存</h2>
+          <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-200">リポジトリに保存</h2>
           <button onClick={onClose} className="text-neutral-500 hover:text-neutral-300">✕</button>
         </div>
 
@@ -107,13 +107,13 @@ export function SaveToRepoDialog({ conversationId, conversationTitle, onClose }:
         <div className="mb-4 flex gap-2">
           <button
             onClick={() => setMode('new')}
-            className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${mode === 'new' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:bg-neutral-700'}`}
+            className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${mode === 'new' ? 'bg-blue-600 text-white' : 'text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'}`}
           >
             新規作成
           </button>
           <button
             onClick={() => setMode('existing')}
-            className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${mode === 'existing' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:bg-neutral-700'}`}
+            className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${mode === 'existing' ? 'bg-blue-600 text-white' : 'text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'}`}
           >
             既存を選択
           </button>
@@ -126,13 +126,13 @@ export function SaveToRepoDialog({ conversationId, conversationTitle, onClose }:
               value={newRepoTitle}
               onChange={(e) => setNewRepoTitle(e.target.value)}
               placeholder="リポジトリ名"
-              className="w-full rounded-lg border border-neutral-600 bg-neutral-700 px-3 py-2 text-sm text-neutral-200 placeholder-neutral-500 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-2 text-sm text-neutral-800 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200 placeholder-neutral-500 focus:border-blue-500 focus:outline-none"
             />
             <input
               value={newRepoDescription}
               onChange={(e) => setNewRepoDescription(e.target.value)}
               placeholder="説明（任意）"
-              className="w-full rounded-lg border border-neutral-600 bg-neutral-700 px-3 py-2 text-sm text-neutral-200 placeholder-neutral-500 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-2 text-sm text-neutral-800 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200 placeholder-neutral-500 focus:border-blue-500 focus:outline-none"
             />
             <div className="flex gap-4">
               <label className="flex items-center gap-2 text-sm text-neutral-300 cursor-pointer">
@@ -163,7 +163,7 @@ export function SaveToRepoDialog({ conversationId, conversationTitle, onClose }:
             <select
               value={selectedRepoId}
               onChange={(e) => setSelectedRepoId(e.target.value)}
-              className="w-full rounded-lg border border-neutral-600 bg-neutral-700 px-3 py-2 text-sm text-neutral-200 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-2 text-sm text-neutral-800 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200 focus:border-blue-500 focus:outline-none"
             >
               <option value="">リポジトリを選択...</option>
               {repos.map((r) => <option key={r.id} value={r.id}>{r.title}</option>)}
@@ -181,7 +181,7 @@ export function SaveToRepoDialog({ conversationId, conversationTitle, onClose }:
           ) : (
             <div className="max-h-32 space-y-1 overflow-y-auto">
               {branches.map((branch) => (
-                <label key={branch.id} className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-neutral-300 hover:bg-neutral-700 cursor-pointer">
+                <label key={branch.id} className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-neutral-700 hover:bg-neutral-100 cursor-pointer dark:text-neutral-300 dark:hover:bg-neutral-700">
                   <input
                     type="checkbox"
                     checked={selectedBranches.has(branch.id)}
@@ -199,7 +199,7 @@ export function SaveToRepoDialog({ conversationId, conversationTitle, onClose }:
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm text-neutral-400 hover:bg-neutral-700"
+            className="rounded-lg px-4 py-2 text-sm text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700"
           >
             キャンセル
           </button>

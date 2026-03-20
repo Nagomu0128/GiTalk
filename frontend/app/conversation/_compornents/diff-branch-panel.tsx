@@ -9,9 +9,9 @@ type DiffBranchPanelProps = {
 
 export const DiffBranchPanel = ({ branchName, nodes }: DiffBranchPanelProps) => (
   <div className="flex flex-1 flex-col overflow-hidden">
-    <div className="flex h-10 shrink-0 items-center gap-2 border-b border-neutral-700 px-4">
+    <div className="flex h-10 shrink-0 items-center gap-2 border-b border-neutral-200 px-4 dark:border-neutral-700">
       <GitBranch size={14} className="text-neutral-500" />
-      <span className="text-sm font-medium text-neutral-300">{branchName}</span>
+      <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{branchName}</span>
       <span className="text-xs text-neutral-500">({nodes.length} nodes)</span>
     </div>
     <div className="flex-1 overflow-y-auto">
