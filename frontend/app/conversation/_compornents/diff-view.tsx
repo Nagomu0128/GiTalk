@@ -72,9 +72,13 @@ export function DiffView({ conversationId, onClose, branches: branchesProp, init
           </div>
           <div className="relative w-px shrink-0 bg-neutral-200 dark:bg-neutral-700">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-              <span className="flex items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-500">
-                vs
-              </span>
+              <button
+                onClick={fetchDiff}
+                disabled={!branchBId || loading}
+                className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-neutral-900 transition-colors hover:bg-amber-400 disabled:opacity-50"
+              >
+                {loading ? '比較中...' : '比較する'}
+              </button>
             </div>
           </div>
           <div className="flex flex-1 flex-col items-center justify-center gap-4">
