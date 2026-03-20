@@ -828,6 +828,23 @@ export default function TreePage() {
     return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
   }, [user]);
 
+  const refetchAll = useCallback(async () => {
+    try {
+      const headers = await getHeaders();
+      const [branchesRes, nodesRes] = await Promise.all([
+        fetch(`${API}/v1/conversations/${conversationId}/branches`, { headers }),
+        fetch(`${API}/v1/conversations/${conversationId}/nodes`, { headers }),
+      ]);
+      if (branchesRes.ok && nodesRes.ok) {
+        const [branchesData, nodesData] = await Promise.all([branchesRes.json(), nodesRes.json()]);
+        setRawBranches(branchesData.data);
+        setRawNodes(nodesData.nodes);
+      }
+    } catch (error) {
+      console.error('Refetch failed:', error);
+    }
+  }, [conversationId, getHeaders]);
+
   useEffect(() => {
     if (!user || !conversationId) return;
 
@@ -910,9 +927,54 @@ export default function TreePage() {
         });
         return;
       }
+      if (action === 'cherry-pick') {
+        const activeBranchId = conversation?.activeBranchId;
+        if (!activeBranchId) return;
+        const doIt = async () => {
+          try {
+            const headers = await getHeaders();
+            const res = await fetch(`${API}/v1/conversations/${conversationId}/cherry-pick`, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ source_node_id: nodeId, target_branch_id: activeBranchId }),
+            });
+            if (res.ok) {
+              await refetchAll();
+            } else {
+              const err = await res.json();
+              console.error('Cherry-pick failed:', err.error?.message);
+            }
+          } catch (error) {
+            console.error('Cherry-pick error:', error);
+          }
+        };
+        doIt();
+        return;
+      }
+      if (action === 'switch') {
+        const targetNode = rawNodes.find((n) => n.id === nodeId);
+        if (!targetNode) return;
+        const doSwitch = async () => {
+          try {
+            const headers = await getHeaders();
+            const res = await fetch(`${API}/v1/conversations/${conversationId}/switch`, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ branch_id: targetNode.branchId }),
+            });
+            if (res.ok) {
+              await refetchAll();
+            }
+          } catch (error) {
+            console.error('Switch error:', error);
+          }
+        };
+        doSwitch();
+        return;
+      }
       console.log(`Action: ${action}, Node: ${nodeId}`);
     },
-    [gitNodes, allEdges],
+    [gitNodes, allEdges, conversation?.activeBranchId, conversationId, getHeaders, rawNodes, refetchAll],
   );
 
   const handleCloseContextMenu = useCallback(() => {
