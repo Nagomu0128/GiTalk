@@ -357,12 +357,13 @@ export default function TreePage() {
         return;
       }
 
-      if (action === 'merge to') {
-        setMergeState({ status: 'selecting-source', targetBranchIndex: branchIndex, sourceBranchIndex: null });
-        return;
-      }
-
       if (action === 'merge') {
+        // Step 1: select target branch (merge into this branch)
+        if (mergeState.status === 'idle') {
+          setMergeState({ status: 'selecting-source', targetBranchIndex: branchIndex, sourceBranchIndex: null });
+          return;
+        }
+        // Step 2: select source branch and execute merge
         if (mergeState.status === 'selecting-source' && mergeState.targetBranchIndex !== null) {
           const targetBranch = rawBranches[mergeState.targetBranchIndex];
           if (!targetBranch || branchIndex === mergeState.targetBranchIndex) return;
@@ -398,8 +399,6 @@ export default function TreePage() {
           return;
         }
       }
-
-      console.log(`Branch action: ${action}, Branch: ${branch.name} (${branch.id})`);
     },
     [rawBranches, mergeState, getHeaders, conversationId, refetchData],
   );
