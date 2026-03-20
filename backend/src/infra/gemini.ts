@@ -17,19 +17,18 @@ type ValidModel = (typeof VALID_MODELS)[number];
 export const isValidModel = (model: string): model is ValidModel =>
   (VALID_MODELS as readonly string[]).includes(model);
 
-const getProjectId = (): string => process.env.GCP_PROJECT_ID || 'gitalk-01100128';
-const getLocation = (): string => process.env.GCP_LOCATION || 'us-central1';
 const getDefaultModel = (): string => process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 const CACHE_TTL_SECONDS = 3600;
 const CACHE_MIN_TOKENS = 32768;
 
-const getClient = (): GoogleGenAI =>
-  new GoogleGenAI({
-    vertexai: true,
-    project: getProjectId(),
-    location: getLocation(),
-  });
+const getClient = (): GoogleGenAI => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY environment variable is not set');
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 // ============================================================
 // Standard (non-cached) API
