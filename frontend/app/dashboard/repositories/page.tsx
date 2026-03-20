@@ -65,15 +65,15 @@ function ContextMenu({
     <div ref={ref} className="relative">
       <button
         onClick={(e) => { e.stopPropagation(); setOpen((prev) => !prev); }}
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-700 hover:text-neutral-300"
+        className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
       >
         <MoreHorizontal size={16} />
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-10 mt-1 w-40 rounded-lg border border-neutral-700 bg-neutral-800 py-1 shadow-xl">
+        <div className="absolute right-0 top-full z-10 mt-1 w-40 rounded-lg border border-neutral-200 bg-white py-1 shadow-xl dark:border-neutral-700 dark:bg-neutral-800">
           <button
             onClick={(e) => { e.stopPropagation(); setOpen(false); onDelete(); }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-400 transition-colors hover:bg-neutral-700"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-500 transition-colors hover:bg-neutral-100 dark:text-red-400 dark:hover:bg-neutral-700"
           >
             <Trash2 size={14} />
             削除
@@ -144,20 +144,20 @@ export default function RepositoriesPage() {
             <img
               src={user.photoURL}
               alt={user.displayName ?? ''}
-              className="h-36 w-36 rounded-full border-4 border-neutral-700 shadow-lg shadow-black/30"
+              className="h-36 w-36 rounded-full border-4 border-neutral-200 shadow-lg dark:border-neutral-700 dark:shadow-black/30"
             />
           ) : (
-            <div className="flex h-36 w-36 items-center justify-center rounded-full border-4 border-neutral-700 bg-neutral-700 text-5xl font-bold text-neutral-300 shadow-lg shadow-black/30">
+            <div className="flex h-36 w-36 items-center justify-center rounded-full border-4 border-neutral-200 bg-neutral-100 text-5xl font-bold text-neutral-600 shadow-lg dark:border-neutral-700 dark:bg-neutral-700 dark:text-neutral-300 dark:shadow-black/30">
               {user?.displayName?.charAt(0) ?? '?'}
             </div>
           )}
-          <h1 className="mt-4 text-2xl font-bold text-neutral-100">{user?.displayName ?? 'ユーザー'}</h1>
+          <h1 className="mt-4 text-2xl font-bold text-neutral-900 dark:text-neutral-100">{user?.displayName ?? 'ユーザー'}</h1>
           <p className="mt-1 text-sm text-neutral-500">{user?.email ?? ''}</p>
         </div>
 
         {/* Repositories header */}
-        <div className="mb-4 border-b border-neutral-700 pb-3">
-          <h2 className="text-sm font-semibold text-neutral-300">Repositories</h2>
+        <div className="mb-4 border-b border-neutral-200 pb-3 dark:border-neutral-700">
+          <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">Repositories</h2>
         </div>
 
         {loading && <p className="text-sm text-neutral-500">読み込み中...</p>}
@@ -168,15 +168,15 @@ export default function RepositoriesPage() {
         {/* Filter bar */}
         {!loading && repositories.length > 0 && (
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex items-center gap-1 rounded-lg border border-neutral-700 p-0.5">
+            <div className="flex items-center gap-1 rounded-lg border border-neutral-200 p-0.5 dark:border-neutral-700">
               {(['all', 'private', 'public'] as const).map((value) => (
                 <button
                   key={value}
                   onClick={() => setVisibilityFilter(value)}
                   className={`rounded-md px-3 py-1 text-xs transition-colors ${
                     visibilityFilter === value
-                      ? 'bg-neutral-700 text-neutral-200'
-                      : 'text-neutral-400 hover:text-neutral-300'
+                      ? 'bg-neutral-200 text-neutral-800 dark:bg-neutral-700 dark:text-neutral-200'
+                      : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300'
                   }`}
                 >
                   {value === 'all' ? 'すべて' : value}
@@ -186,7 +186,7 @@ export default function RepositoriesPage() {
 
             <button
               onClick={() => setSortKey((prev) => (prev === 'updatedAt' ? 'title' : 'updatedAt'))}
-              className="ml-auto flex items-center gap-1.5 rounded-lg border border-neutral-700 px-3 py-1.5 text-xs text-neutral-400 transition-colors hover:border-neutral-600 hover:text-neutral-300"
+              className="ml-auto flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs text-neutral-600 transition-colors hover:border-neutral-300 hover:text-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-neutral-300"
             >
               <ArrowDownUp size={13} />
               {sortKey === 'updatedAt' ? '更新日時' : '名前'}
@@ -206,28 +206,28 @@ export default function RepositoriesPage() {
               tabIndex={0}
               onClick={() => router.push(`/repository/${repo.id}`)}
               onKeyDown={(e) => { if (e.key === 'Enter') router.push(`/repository/${repo.id}`); }}
-              className="group flex items-start gap-4 rounded-xl border border-neutral-700 bg-neutral-800 p-4 transition-all hover:border-neutral-600 hover:shadow-lg hover:shadow-black/20 cursor-pointer"
+              className="group flex cursor-pointer items-start gap-4 rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-300 hover:shadow-lg dark:border-neutral-700 dark:bg-neutral-800 dark:hover:border-neutral-600 dark:hover:shadow-black/20"
             >
               {/* Icon */}
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-700/50 text-neutral-400 transition-colors group-hover:bg-neutral-700 group-hover:text-neutral-300">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-500 transition-colors group-hover:bg-neutral-200 group-hover:text-neutral-700 dark:bg-neutral-700/50 dark:text-neutral-400 dark:group-hover:bg-neutral-700 dark:group-hover:text-neutral-300">
                 <Package size={20} />
               </div>
 
               {/* Content */}
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 flex-1">
                 {/* Row 1: Title + Visibility badge */}
                 <div className="flex items-center gap-2">
-                  <h3 className="truncate text-sm font-medium text-neutral-200 group-hover:text-white">
+                  <h3 className="truncate text-sm font-medium text-neutral-800 group-hover:text-neutral-950 dark:text-neutral-200 dark:group-hover:text-white">
                     {repo.title}
                   </h3>
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-neutral-600 px-2 py-0.5 text-xs text-neutral-400">
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-neutral-300 px-2 py-0.5 text-xs text-neutral-500 dark:border-neutral-600 dark:text-neutral-400">
                     {repo.visibility === 'private' ? <Lock size={11} /> : <Globe size={11} />}
                     {repo.visibility}
                   </span>
                 </div>
 
                 {/* Row 2: Description */}
-                <p className="mt-1 truncate text-xs text-neutral-400">
+                <p className="mt-1 truncate text-xs text-neutral-500 dark:text-neutral-400">
                   {repo.description ?? '説明なし'}
                 </p>
 
@@ -250,15 +250,15 @@ export default function RepositoriesPage() {
       {/* Delete confirmation dialog */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-2xl bg-neutral-800 p-6 shadow-xl">
-            <h3 className="mb-2 text-lg font-bold text-neutral-200">リポジトリを削除しますか？</h3>
-            <p className="mb-4 text-sm text-neutral-400">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-neutral-800">
+            <h3 className="mb-2 text-lg font-bold text-neutral-900 dark:text-neutral-200">リポジトリを削除しますか？</h3>
+            <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
               「{deleteTarget.title}」を削除します。この操作は取り消せません。
             </p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="rounded-lg px-4 py-2 text-sm text-neutral-400 hover:bg-neutral-700"
+                className="rounded-lg px-4 py-2 text-sm text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700"
               >
                 キャンセル
               </button>
