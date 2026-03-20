@@ -1,10 +1,9 @@
-import { ArrowLeft, HelpCircle, MoreVertical, Search, Save } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Search, Save } from 'lucide-react';
 
 export const ConversationHeader = ({
   title,
   onBack,
   onSearch,
-  onHelp,
   onPush,
   onMore,
   branchSelector,
@@ -12,7 +11,6 @@ export const ConversationHeader = ({
   readonly title: string;
   readonly onBack: () => void;
   readonly onSearch: () => void;
-  readonly onHelp: () => void;
   readonly onPush: () => void;
   readonly onMore: () => void;
   readonly branchSelector: React.ReactNode;
@@ -43,12 +41,6 @@ export const ConversationHeader = ({
         className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
       >
         <Search size={14} />
-      </button>
-      <button
-        onClick={onHelp}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-      >
-        <HelpCircle size={14} />
       </button>
       <button
         onClick={onMore}
