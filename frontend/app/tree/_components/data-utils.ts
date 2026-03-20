@@ -75,12 +75,15 @@ export const buildAllEdges = (
   nodes: ReadonlyArray<GitNode>, branches: ReadonlyArray<GitBranch>,
   rawNodes: ReadonlyArray<ConversationNode>, rawBranches: ReadonlyArray<Branch>,
 ): ReadonlyArray<GraphEdge> => {
+  const INACTIVE_EDGE_COLOR = '#737373';
+
   // Segment edges (same branch, sequential)
   const branchSegments: GraphEdge[] = branches.flatMap((branch, branchIdx) => {
+    const edgeColor = branch.isActive ? branch.color : INACTIVE_EDGE_COLOR;
     const branchNodes = nodes.filter((n) => n.branchIndex === branchIdx).toSorted((a, b) => a.column - b.column);
     return branchNodes.slice(1).map((node, i) => ({
       id: `seg-${branchNodes[i].id}-${node.id}`, fromNodeId: branchNodes[i].id, toNodeId: node.id,
-      edgeType: 'segment' as const, defaultColor: branch.color,
+      edgeType: 'segment' as const, defaultColor: edgeColor,
     }));
   });
 
@@ -97,7 +100,7 @@ export const buildAllEdges = (
       })
       .map((parentId) => ({
         id: `conn-${parentId}-${node.id}`, fromNodeId: parentId, toNodeId: node.id,
-        edgeType: 'connection' as const, defaultColor: branches[node.branchIndex]?.color ?? '#888',
+        edgeType: 'connection' as const, defaultColor: branches[node.branchIndex]?.isActive ? branches[node.branchIndex].color : INACTIVE_EDGE_COLOR,
       })),
   );
 
@@ -122,7 +125,7 @@ export const buildAllEdges = (
           fromNodeId: sourceHeadNode.id,
           toNodeId: mergeDotId,
           edgeType: 'segment',
-          defaultColor: branches[sourceBranchIdx]?.color ?? '#888',
+          defaultColor: branches[sourceBranchIdx]?.isActive ? branches[sourceBranchIdx].color : INACTIVE_EDGE_COLOR,
         });
         // Dashed arrow from merge dot to summary node
         mergeArrows.push({
