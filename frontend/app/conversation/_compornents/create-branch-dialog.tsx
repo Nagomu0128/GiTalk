@@ -22,7 +22,7 @@ export function CreateBranchDialog({ onSubmit, onClose }: CreateBranchDialogProp
 
   const validate = useCallback((value: string): boolean => {
     if (!value.trim()) { setError('ブランチ名を入力してください'); return false; }
-    if (!/^[a-zA-Z0-9_-]+$/.test(value)) { setError('英数字・ハイフン・アンダースコアのみ使用できます'); return false; }
+    if (/^\s+$/.test(value)) { setError('空白のみのブランチ名は使用できません'); return false; }
     if (value.length > 100) { setError('100文字以内で入力してください'); return false; }
     setError('');
     return true;
@@ -56,7 +56,7 @@ export function CreateBranchDialog({ onSubmit, onClose }: CreateBranchDialogProp
             className="border-neutral-600 bg-neutral-700 text-neutral-100 placeholder:text-neutral-500 focus-visible:border-blue-500 focus-visible:ring-blue-500/30"
           />
           {error && <p className="text-xs text-red-400">{error}</p>}
-          <p className="text-xs text-neutral-500">英数字・ハイフン・アンダースコアのみ使用できます</p>
+          <p className="text-xs text-neutral-500">100文字以内で入力してください</p>
         </div>
 
         <div className="mt-4 flex justify-end gap-2">
