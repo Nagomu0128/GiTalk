@@ -69,6 +69,15 @@ export function DiffView({ conversationId, onClose, branches: branchesProp, init
           <div className="flex flex-1 flex-col items-center justify-center gap-4">
             <GitBranch size={36} className="text-neutral-300 dark:text-neutral-700" />
             <p className="text-sm text-neutral-400 dark:text-neutral-600">比較元のブランチ</p>
+            <select
+              value={branchAId}
+              onChange={(e) => setBranchAId(e.target.value)}
+              className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-700 outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+            >
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
           </div>
           <div className="relative w-px shrink-0 bg-neutral-200 dark:bg-neutral-700">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -84,6 +93,16 @@ export function DiffView({ conversationId, onClose, branches: branchesProp, init
           <div className="flex flex-1 flex-col items-center justify-center gap-4">
             <GitBranch size={36} className="text-neutral-300 dark:text-neutral-700" />
             <p className="text-sm text-neutral-400 dark:text-neutral-600">比較先のブランチを選択してください</p>
+            <select
+              value={branchBId}
+              onChange={(e) => setBranchBId(e.target.value)}
+              className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-700 outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+            >
+              <option value="">ブランチを選択...</option>
+              {branches.filter((b) => b.id !== branchAId).map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
           </div>
         </div>
       )}
