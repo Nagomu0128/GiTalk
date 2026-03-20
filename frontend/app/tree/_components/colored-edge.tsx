@@ -34,8 +34,6 @@ export const ColoredEdgeComponent = memo(({
     const exitY = goingDown ? sourceY + 6 : sourceY - 6;
     const entryY = goingDown ? targetY - 6 : targetY + 6;
     const midY = (exitY + entryY) / 2;
-
-    const midY = (exitY + entryY) / 2;
     const path = `M ${sourceX} ${exitY} C ${sourceX} ${midY}, ${targetX} ${midY}, ${targetX} ${entryY}`;
 
     return (
