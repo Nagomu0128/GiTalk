@@ -77,7 +77,7 @@ export const AppSidebar = ({
             className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800"
           >
             <LayoutDashboard size={16} className="shrink-0" />
-            {!collapsed && <span>Dash Board</span>}
+            {!collapsed && <span>会話一覧</span>}
           </button>
 
           <button

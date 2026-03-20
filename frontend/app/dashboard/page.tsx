@@ -97,7 +97,7 @@ export default function DashboardPage() {
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-700 px-6">
         <div className="flex items-center gap-3">
           <Image src="/dark_mode_logo.png" alt="GiTalk" width={44} height={44} />
-          <h1 className="text-lg font-bold text-neutral-200">Dash Board</h1>
+          <h1 className="text-lg font-bold text-neutral-200">会話一覧</h1>
         </div>
         <button
           onClick={handleNewConversation}
