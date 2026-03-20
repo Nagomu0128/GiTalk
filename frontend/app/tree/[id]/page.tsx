@@ -1,10 +1,26 @@
 'use client';
 
-import { useState, useCallback, useMemo, useRef, useEffect, type WheelEvent as ReactWheelEvent } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect, memo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { PenLine, Search, LayoutDashboard, ChevronLeft, ArrowLeft, HelpCircle, MessageSquare, X, FolderGit2 } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import ReactMarkdown from 'react-markdown';
+import {
+  ReactFlow,
+  Background,
+  type Node as RFNode,
+  type Edge as RFEdge,
+  type NodeTypes,
+  type EdgeTypes,
+  type NodeProps,
+  type EdgeProps,
+  useReactFlow,
+  ReactFlowProvider,
+  getBezierPath,
+  getStraightPath,
+  BaseEdge,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -32,44 +48,6 @@ type ContextMenuState = {
   readonly nodeId: string;
 };
 
-type ViewBox = {
-  readonly x: number;
-  readonly y: number;
-  readonly w: number;
-  readonly h: number;
-};
-
-type GraphEdge = {
-  readonly id: string;
-  readonly fromNodeId: string;
-  readonly toNodeId: string;
-  readonly fromX: number;
-  readonly fromY: number;
-  readonly toX: number;
-  readonly toY: number;
-  readonly edgeType: 'segment' | 'connection';
-  readonly defaultColor: string;
-};
-
-// --- Constants ---
-
-const API = '/api';
-
-const NODE_RADIUS = 6;
-const COLUMN_GAP = 40;
-const ROW_GAP = 50;
-const PADDING_LEFT = 40;
-const PADDING_TOP = 40;
-const BRANCH_LABEL_WIDTH = 80;
-const HIGHLIGHT_COLOR = '#e05050';
-
-const ZOOM_SENSITIVITY = 0.001;
-const MIN_ZOOM = 0.3;
-const MAX_ZOOM = 3;
-
-const CONTEXT_MENU_ITEMS = ['read', 'switch', 'cherry-pick', 'new branch'] as const;
-const BRANCH_MENU_ITEMS = ['merge', 'merge to', 'reset', 'diff', 'clone'] as const;
-
 type BranchMenuState = {
   readonly visible: boolean;
   readonly x: number;
@@ -82,6 +60,42 @@ type MergeState = {
   readonly targetBranchIndex: number | null;
   readonly sourceBranchIndex: number | null;
 };
+
+type DotNodeData = {
+  dotColor: string;
+  isSelected: boolean;
+  gitNodeId: string;
+};
+
+type BranchLabelNodeData = {
+  branchName: string;
+  branchIndex: number;
+  isSelected: boolean;
+  isMergeHighlighted: boolean;
+  mergeRole: 'merge-target' | 'merge-source' | null;
+  branchColor: string;
+};
+
+type ColoredEdgeData = {
+  edgeColor: string;
+  isHighlighted: boolean;
+  edgeType: 'segment' | 'connection';
+};
+
+// --- Constants ---
+
+const API = '/api';
+
+const COLUMN_GAP = 40;
+const ROW_GAP = 50;
+const PADDING_LEFT = 40;
+const PADDING_TOP = 40;
+const BRANCH_LABEL_WIDTH = 80;
+const HIGHLIGHT_COLOR = '#e05050';
+const MERGE_LABEL_WIDTH = 120;
+
+const CONTEXT_MENU_ITEMS = ['read', 'switch', 'cherry-pick', 'new branch'] as const;
+const BRANCH_MENU_ITEMS = ['merge', 'merge to', 'reset', 'diff', 'clone'] as const;
 
 // --- Data Conversion ---
 
@@ -149,12 +163,18 @@ const nodePosition = (node: GitNode) => ({
   y: PADDING_TOP + node.branchIndex * ROW_GAP,
 });
 
+type GraphEdge = {
+  readonly id: string;
+  readonly fromNodeId: string;
+  readonly toNodeId: string;
+  readonly edgeType: 'segment' | 'connection';
+  readonly defaultColor: string;
+};
+
 const buildAllEdges = (
   nodes: ReadonlyArray<GitNode>,
   branches: ReadonlyArray<GitBranch>,
 ): ReadonlyArray<GraphEdge> => {
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-
   const branchSegments: ReadonlyArray<GraphEdge> = branches.flatMap((branch, branchIdx) => {
     const branchNodes = nodes
       .filter((n) => n.branchIndex === branchIdx)
@@ -162,37 +182,26 @@ const buildAllEdges = (
 
     return branchNodes.slice(1).map((node, i) => {
       const prev = branchNodes[i];
-      const from = nodePosition(prev);
-      const to = nodePosition(node);
       return {
         id: `seg-${prev.id}-${node.id}`,
         fromNodeId: prev.id,
         toNodeId: node.id,
-        fromX: from.x,
-        fromY: from.y,
-        toX: to.x,
-        toY: to.y,
         edgeType: 'segment' as const,
         defaultColor: branch.color,
       };
     });
   });
 
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
   const connections: ReadonlyArray<GraphEdge> = nodes.flatMap((node) => {
     const results: GraphEdge[] = [];
     node.parentIds.forEach((parentId) => {
       const parent = nodeMap.get(parentId);
       if (!parent || parent.branchIndex === node.branchIndex) return;
-      const from = nodePosition(parent);
-      const to = nodePosition(node);
       results.push({
         id: `conn-${parentId}-${node.id}`,
         fromNodeId: parentId,
         toNodeId: node.id,
-        fromX: from.x,
-        fromY: from.y,
-        toX: to.x,
-        toY: to.y,
         edgeType: 'connection' as const,
         defaultColor: branches[node.branchIndex].color,
       });
@@ -249,145 +258,114 @@ const collectPathMessages = (
   return path;
 };
 
-// --- Components ---
+// --- Custom React Flow Node: DotNode ---
 
-const EdgeLine = ({
-  edge,
-  isHighlighted,
-}: {
-  readonly edge: GraphEdge;
-  readonly isHighlighted: boolean;
-}) => {
-  const strokeColor = isHighlighted ? HIGHLIGHT_COLOR : edge.defaultColor;
+const DotNodeComponent = memo(({ data }: NodeProps<RFNode<DotNodeData>>) => {
+  const dotColor = data.dotColor;
 
-  if (edge.edgeType === 'segment') {
+  return (
+    <div
+      className={`flex items-center justify-center h-5 w-5 rounded-full hover:bg-neutral-700 cursor-pointer ${data.isSelected ? 'ring-2 ring-amber-400/50' : ''}`}
+    >
+      <span className={`block h-3 w-3 rounded-full ${dotColor} transition-colors`} />
+    </div>
+  );
+});
+DotNodeComponent.displayName = 'DotNodeComponent';
+
+// --- Custom React Flow Node: BranchLabelNode ---
+
+const BranchLabelNodeComponent = memo(({ data }: NodeProps<RFNode<BranchLabelNodeData>>) => {
+  const isMergeHighlighted = data.isMergeHighlighted;
+
+  return (
+    <div className="flex items-center gap-1">
+      <Badge
+        variant="outline"
+        className={`h-8 cursor-pointer justify-center transition-colors px-3 ${
+          isMergeHighlighted
+            ? 'border-amber-500 bg-amber-500/20 text-amber-300'
+            : data.isSelected
+              ? 'border-amber-500 bg-amber-500/20 text-amber-300'
+              : 'border-neutral-600 bg-neutral-800 text-neutral-300 hover:border-neutral-500 hover:bg-neutral-700'
+        }`}
+      >
+        {data.branchName}
+      </Badge>
+      {data.mergeRole && (
+        <span className="text-xs text-amber-400 whitespace-nowrap">
+          {data.mergeRole === 'merge-target' ? 'merge to 選択中' : 'merge 選択中'}
+        </span>
+      )}
+    </div>
+  );
+});
+BranchLabelNodeComponent.displayName = 'BranchLabelNodeComponent';
+
+// --- Custom React Flow Edge: ColoredEdge ---
+
+const ColoredEdgeComponent = memo(({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  data,
+  sourcePosition,
+  targetPosition,
+}: EdgeProps<RFEdge<ColoredEdgeData>>) => {
+  const edgeColor = data?.isHighlighted ? HIGHLIGHT_COLOR : (data?.edgeColor ?? '#888');
+  const strokeWidth = data?.isHighlighted ? 3 : 2;
+
+  if (data?.edgeType === 'connection') {
+    const [edgePath] = getBezierPath({
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      sourcePosition,
+      targetPosition,
+      curvature: 0.5,
+    });
+
     return (
-      <line
-        x1={edge.fromX}
-        y1={edge.fromY}
-        x2={edge.toX}
-        y2={edge.toY}
-        stroke={strokeColor}
-        strokeWidth={isHighlighted ? 3 : 2}
-        className="transition-colors"
+      <BaseEdge
+        id={id}
+        path={edgePath}
+        style={{ stroke: edgeColor, strokeWidth, transition: 'stroke 0.2s' }}
       />
     );
   }
 
-  const midX = edge.fromX + COLUMN_GAP * 0.5;
-  const d = `M ${edge.fromX} ${edge.fromY} C ${midX} ${edge.fromY}, ${midX} ${edge.toY}, ${edge.toX} ${edge.toY}`;
+  const [edgePath] = getStraightPath({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+  });
 
   return (
-    <path
-      d={d}
-      stroke={strokeColor}
-      strokeWidth={isHighlighted ? 3 : 2}
-      fill="none"
-      className="transition-colors"
+    <BaseEdge
+      id={id}
+      path={edgePath}
+      style={{ stroke: edgeColor, strokeWidth, transition: 'stroke 0.2s' }}
     />
   );
+});
+ColoredEdgeComponent.displayName = 'ColoredEdgeComponent';
+
+// --- Node & Edge Type registrations ---
+
+const nodeTypes: NodeTypes = {
+  dotNode: DotNodeComponent,
+  branchLabel: BranchLabelNodeComponent,
 };
 
-const NODE_FO_SIZE = 28;
-
-const NodeDot = ({
-  node,
-  isSelected,
-  isOnHighlightedPath,
-  onClick,
-}: {
-  readonly node: GitNode;
-  readonly isSelected: boolean;
-  readonly isOnHighlightedPath: boolean;
-  readonly onClick: (nodeId: string, event: React.MouseEvent) => void;
-}) => {
-  const { x, y } = nodePosition(node);
-  const dotColor = isSelected
-    ? 'bg-amber-400'
-    : isOnHighlightedPath
-      ? 'bg-red-500'
-      : 'bg-neutral-400';
-
-  return (
-    <foreignObject
-      x={x - NODE_FO_SIZE / 2}
-      y={y - NODE_FO_SIZE / 2}
-      width={NODE_FO_SIZE}
-      height={NODE_FO_SIZE}
-      style={{ overflow: 'visible' }}
-    >
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        className={`h-5 w-5 min-w-0 !rounded-full overflow-hidden p-0 hover:bg-neutral-700 focus-visible:!ring-0 focus-visible:!border-transparent ${isSelected ? 'ring-2 ring-amber-400/50' : ''}`}
-        onClick={(e) => onClick(node.id, e)}
-      >
-        <span className={`block h-3 w-3 rounded-full ${dotColor} transition-colors`} />
-      </Button>
-    </foreignObject>
-  );
+const edgeTypes: EdgeTypes = {
+  coloredEdge: ColoredEdgeComponent,
 };
 
-const BADGE_HEIGHT = 32;
-
-const MERGE_LABEL_WIDTH = 120;
-
-const BranchLabel = ({
-  branch,
-  branchIndex,
-  maxColumn,
-  isSelected,
-  mergeRole,
-  onClick,
-}: {
-  readonly branch: GitBranch;
-  readonly branchIndex: number;
-  readonly maxColumn: number;
-  readonly isSelected: boolean;
-  readonly mergeRole: 'merge-target' | 'merge-source' | null;
-  readonly onClick: (branchIndex: number, event: React.MouseEvent) => void;
-}) => {
-  const x = PADDING_LEFT + (maxColumn + 1.5) * COLUMN_GAP;
-  const y = PADDING_TOP + branchIndex * ROW_GAP;
-  const isMergeHighlighted = mergeRole !== null;
-
-  return (
-    <>
-      <foreignObject
-        x={x}
-        y={y - BADGE_HEIGHT / 2}
-        width={BRANCH_LABEL_WIDTH}
-        height={BADGE_HEIGHT}
-      >
-        <Badge
-          variant="outline"
-          className={`h-full w-full cursor-pointer justify-center transition-colors ${
-            isMergeHighlighted
-              ? 'border-amber-500 bg-amber-500/20 text-amber-300'
-              : isSelected
-                ? 'border-amber-500 bg-amber-500/20 text-amber-300'
-                : 'border-neutral-600 bg-neutral-800 text-neutral-300 hover:border-neutral-500 hover:bg-neutral-700'
-          }`}
-          onClick={(e) => onClick(branchIndex, e as unknown as React.MouseEvent)}
-        >
-          {branch.name}
-        </Badge>
-      </foreignObject>
-      {mergeRole && (
-        <foreignObject
-          x={x + BRANCH_LABEL_WIDTH + 4}
-          y={y - BADGE_HEIGHT / 2}
-          width={MERGE_LABEL_WIDTH}
-          height={BADGE_HEIGHT}
-        >
-          <span className="flex h-full items-center text-xs text-amber-400">
-            {mergeRole === 'merge-target' ? 'merge to 選択中' : 'merge 選択中'}
-          </span>
-        </foreignObject>
-      )}
-    </>
-  );
-};
+// --- Components ---
 
 const NodePopover = ({
   state,
@@ -725,6 +703,151 @@ const ErrorView = ({ message, onBack }: { readonly message: string; readonly onB
   </div>
 );
 
+// --- Build React Flow nodes and edges ---
+
+const buildReactFlowNodes = (
+  gitNodes: ReadonlyArray<GitNode>,
+  gitBranches: ReadonlyArray<GitBranch>,
+  activeSelectedNodeId: string | null,
+  highlightedNodeIds: ReadonlySet<string>,
+  maxColumn: number,
+  branchMenuVisible: boolean,
+  branchMenuBranchIndex: number,
+  mergeState: MergeState,
+): RFNode[] => {
+  const dotNodes: RFNode<DotNodeData>[] = gitNodes.map((node) => {
+    const pos = nodePosition(node);
+    const isSelected = node.id === activeSelectedNodeId;
+    const isOnPath = highlightedNodeIds.has(node.id);
+    const dotColor = isSelected
+      ? 'bg-amber-400'
+      : isOnPath
+        ? 'bg-red-500'
+        : 'bg-neutral-400';
+
+    return {
+      id: node.id,
+      type: 'dotNode',
+      position: { x: pos.x - 10, y: pos.y - 10 },
+      data: {
+        dotColor,
+        isSelected,
+        gitNodeId: node.id,
+      },
+      draggable: false,
+      connectable: false,
+    };
+  });
+
+  const branchLabelNodes: RFNode<BranchLabelNodeData>[] = gitBranches.map((branch, index) => {
+    const x = PADDING_LEFT + (maxColumn + 1.5) * COLUMN_GAP;
+    const y = PADDING_TOP + index * ROW_GAP;
+    const mergeRole =
+      mergeState.targetBranchIndex === index
+        ? ('merge-target' as const)
+        : mergeState.sourceBranchIndex === index
+          ? ('merge-source' as const)
+          : null;
+
+    return {
+      id: `branch-label-${index}`,
+      type: 'branchLabel',
+      position: { x: x, y: y - 16 },
+      data: {
+        branchName: branch.name,
+        branchIndex: index,
+        isSelected: branchMenuVisible && branchMenuBranchIndex === index,
+        isMergeHighlighted: mergeRole !== null,
+        mergeRole,
+        branchColor: branch.color,
+      },
+      draggable: false,
+      connectable: false,
+    };
+  });
+
+  return [...dotNodes, ...branchLabelNodes];
+};
+
+const buildReactFlowEdges = (
+  allEdges: ReadonlyArray<GraphEdge>,
+  highlightedEdgeIds: ReadonlySet<string>,
+): RFEdge<ColoredEdgeData>[] => {
+  return allEdges.map((edge) => {
+    const isHighlighted = highlightedEdgeIds.has(edge.id);
+    return {
+      id: edge.id,
+      source: edge.fromNodeId,
+      target: edge.toNodeId,
+      type: 'coloredEdge',
+      data: {
+        edgeColor: edge.defaultColor,
+        isHighlighted,
+        edgeType: edge.edgeType,
+      },
+    };
+  });
+};
+
+// --- Inner Tree Component (needs ReactFlowProvider context) ---
+
+const TreeFlowInner = ({
+  rfNodes,
+  rfEdges,
+  onNodeClick,
+  onNodeContextMenu,
+  onBranchLabelClick,
+}: {
+  readonly rfNodes: RFNode[];
+  readonly rfEdges: RFEdge[];
+  readonly onNodeClick: (event: React.MouseEvent, node: RFNode) => void;
+  readonly onNodeContextMenu: (event: React.MouseEvent, node: RFNode) => void;
+  readonly onBranchLabelClick: (branchIndex: number, event: React.MouseEvent) => void;
+}) => {
+  const handleNodeClick = useCallback(
+    (event: React.MouseEvent, node: RFNode) => {
+      if (node.type === 'branchLabel') {
+        const data = node.data as BranchLabelNodeData;
+        onBranchLabelClick(data.branchIndex, event);
+        return;
+      }
+      onNodeClick(event, node);
+    },
+    [onNodeClick, onBranchLabelClick],
+  );
+
+  const handleNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: RFNode) => {
+      if (node.type === 'dotNode') {
+        event.preventDefault();
+        onNodeContextMenu(event, node);
+      }
+    },
+    [onNodeContextMenu],
+  );
+
+  return (
+    <ReactFlow
+      nodes={rfNodes}
+      edges={rfEdges}
+      nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
+      onNodeClick={handleNodeClick}
+      onNodeContextMenu={handleNodeContextMenu}
+      nodesConnectable={false}
+      nodesDraggable={false}
+      fitView
+      fitViewOptions={{ padding: 0.3 }}
+      minZoom={0.3}
+      maxZoom={3}
+      proOptions={{ hideAttribution: true }}
+      style={{ background: 'transparent' }}
+    >
+      <Background color="#404040" gap={20} size={1} />
+    </ReactFlow>
+  );
+};
+
 // --- Page Component ---
 
 export default function TreePage() {
@@ -732,11 +855,6 @@ export default function TreePage() {
   const router = useRouter();
   const conversationId = params.id as string;
   const user = useAuthStore((s) => s.user);
-
-  const svgRef = useRef<SVGSVGElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isPanning = useRef(false);
-  const panStart = useRef({ x: 0, y: 0 });
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -796,18 +914,6 @@ export default function TreePage() {
   }, [selectedNodeId]);
 
   const maxColumn = gitNodes.length > 0 ? Math.max(...gitNodes.map((n) => n.column)) : 0;
-  const extraLabelWidth = mergeState.status !== 'idle' ? MERGE_LABEL_WIDTH + 4 : 0;
-  const svgWidth = PADDING_LEFT + (maxColumn + 3) * COLUMN_GAP + BRANCH_LABEL_WIDTH + extraLabelWidth;
-  const svgHeight = PADDING_TOP * 2 + Math.max(0, gitBranches.length - 1) * ROW_GAP;
-
-  const [viewBox, setViewBox] = useState<ViewBox | null>(null);
-
-  // Reset viewBox when SVG dimensions change
-  useEffect(() => {
-    if (gitNodes.length > 0) {
-      setViewBox({ x: 0, y: 0, w: svgWidth, h: svgHeight });
-    }
-  }, [svgWidth, svgHeight, gitNodes.length]);
 
   const allEdges = useMemo(() => buildAllEdges(gitNodes, gitBranches), [gitNodes, gitBranches]);
 
@@ -821,6 +927,27 @@ export default function TreePage() {
       });
     return ids;
   }, [allEdges, highlightedEdgeIds]);
+
+  // Build React Flow nodes and edges
+  const rfNodes = useMemo(
+    () =>
+      buildReactFlowNodes(
+        gitNodes,
+        gitBranches,
+        activeSelectedNodeId,
+        highlightedNodeIds,
+        maxColumn,
+        branchMenu.visible,
+        branchMenu.branchIndex,
+        mergeState,
+      ),
+    [gitNodes, gitBranches, activeSelectedNodeId, highlightedNodeIds, maxColumn, branchMenu.visible, branchMenu.branchIndex, mergeState],
+  );
+
+  const rfEdges = useMemo(
+    () => buildReactFlowEdges(allEdges, highlightedEdgeIds),
+    [allEdges, highlightedEdgeIds],
+  );
 
   // --- Data Fetching ---
 
@@ -900,8 +1027,9 @@ export default function TreePage() {
 
   // --- Event Handlers ---
 
-  const handleNodeClick = useCallback((nodeId: string, event: React.MouseEvent) => {
+  const handleNodeClick = useCallback((event: React.MouseEvent, node: RFNode) => {
     event.stopPropagation();
+    const nodeId = node.id;
     setActiveSelectedNodeId(nodeId);
     setHighlightedEdgeIds(tracePathToRoot(nodeId, gitNodes, allEdges));
     setContextMenu((prev) =>
@@ -909,6 +1037,15 @@ export default function TreePage() {
         ? { ...prev, visible: false }
         : { visible: true, x: event.clientX, y: event.clientY, nodeId },
     );
+  }, [gitNodes, allEdges]);
+
+  const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: RFNode) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const nodeId = node.id;
+    setActiveSelectedNodeId(nodeId);
+    setHighlightedEdgeIds(tracePathToRoot(nodeId, gitNodes, allEdges));
+    setContextMenu({ visible: true, x: event.clientX, y: event.clientY, nodeId });
   }, [gitNodes, allEdges]);
 
   const handleContextMenuAction = useCallback(
@@ -920,7 +1057,6 @@ export default function TreePage() {
         return;
       }
       if (action === 'new branch') {
-        // Show dialog centered on screen
         setNewBranchDialog({
           visible: true,
           nodeId,
@@ -1145,68 +1281,8 @@ export default function TreePage() {
     setChatInput('');
   }, [chatInput]);
 
-  // --- Zoom (wheel) ---
-  const handleWheel = useCallback((e: ReactWheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const svg = svgRef.current;
-    if (!svg) return;
-
-    const rect = svg.getBoundingClientRect();
-    const ratioX = (e.clientX - rect.left) / rect.width;
-    const ratioY = (e.clientY - rect.top) / rect.height;
-
-    setViewBox((prev) => {
-      if (!prev) return prev;
-      const zoomFactor = 1 + e.deltaY * ZOOM_SENSITIVITY;
-      const newW = Math.max(svgWidth * (1 / MAX_ZOOM), Math.min(svgWidth * (1 / MIN_ZOOM), prev.w * zoomFactor));
-      const newH = Math.max(svgHeight * (1 / MAX_ZOOM), Math.min(svgHeight * (1 / MIN_ZOOM), prev.h * zoomFactor));
-      const newX = prev.x + (prev.w - newW) * ratioX;
-      const newY = prev.y + (prev.h - newH) * ratioY;
-      return { x: newX, y: newY, w: newW, h: newH };
-    });
-  }, [svgWidth, svgHeight]);
-
-  // --- Pan (drag) ---
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
-    isPanning.current = true;
-    panStart.current = { x: e.clientX, y: e.clientY };
-  }, []);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isPanning.current || !svgRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const dx = (e.clientX - panStart.current.x) / rect.width;
-    const dy = (e.clientY - panStart.current.y) / rect.height;
-    panStart.current = { x: e.clientX, y: e.clientY };
-
-    setViewBox((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        x: prev.x - dx * prev.w,
-        y: prev.y - dy * prev.h,
-      };
-    });
-  }, []);
-
-  const handleMouseUp = useCallback(() => {
-    isPanning.current = false;
-  }, []);
-
-  // Prevent default wheel scroll on container
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const prevent = (e: globalThis.WheelEvent) => e.preventDefault();
-    container.addEventListener('wheel', prevent, { passive: false });
-    return () => container.removeEventListener('wheel', prevent);
-  }, []);
-
   if (loading) return <LoadingView />;
   if (error) return <ErrorView message={error} onBack={() => router.push('/dashboard')} />;
-
-  const currentViewBox = viewBox ?? { x: 0, y: 0, w: svgWidth, h: svgHeight };
 
   return (
     <div className="flex h-screen w-full bg-neutral-900">
@@ -1240,63 +1316,19 @@ export default function TreePage() {
         )}
 
         {/* Tree area */}
-        <div
-          ref={containerRef}
-          className="relative flex flex-1 items-center justify-center overflow-hidden"
-          onWheel={handleWheel}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        >
+        <div className="relative flex-1 overflow-hidden">
           {gitNodes.length === 0 ? (
-            <div className="text-neutral-500">ノードがありません</div>
+            <div className="flex h-full w-full items-center justify-center text-neutral-500">ノードがありません</div>
           ) : (
-            <svg
-              ref={svgRef}
-              className="h-full w-full"
-              viewBox={`${currentViewBox.x} ${currentViewBox.y} ${currentViewBox.w} ${currentViewBox.h}`}
-              preserveAspectRatio="xMidYMid meet"
-            >
-              {/* Edges */}
-              {allEdges.map((edge) => (
-                <EdgeLine
-                  key={edge.id}
-                  edge={edge}
-                  isHighlighted={highlightedEdgeIds.has(edge.id)}
-                />
-              ))}
-
-              {/* Nodes */}
-              {gitNodes.map((node) => (
-                <NodeDot
-                  key={node.id}
-                  node={node}
-                  isSelected={node.id === activeSelectedNodeId}
-                  isOnHighlightedPath={highlightedNodeIds.has(node.id)}
-                  onClick={handleNodeClick}
-                />
-              ))}
-
-              {/* Branch labels */}
-              {gitBranches.map((branch, index) => (
-                <BranchLabel
-                  key={branch.name}
-                  branch={branch}
-                  branchIndex={index}
-                  maxColumn={maxColumn}
-                  isSelected={branchMenu.visible && branchMenu.branchIndex === index}
-                  mergeRole={
-                    mergeState.targetBranchIndex === index
-                      ? 'merge-target'
-                      : mergeState.sourceBranchIndex === index
-                        ? 'merge-source'
-                        : null
-                  }
-                  onClick={handleBranchLabelClick}
-                />
-              ))}
-            </svg>
+            <ReactFlowProvider>
+              <TreeFlowInner
+                rfNodes={rfNodes}
+                rfEdges={rfEdges}
+                onNodeClick={handleNodeClick}
+                onNodeContextMenu={handleNodeContextMenu}
+                onBranchLabelClick={handleBranchLabelClick}
+              />
+            </ReactFlowProvider>
           )}
 
           {/* Node Popover */}
