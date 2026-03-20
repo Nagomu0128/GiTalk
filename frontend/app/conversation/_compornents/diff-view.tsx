@@ -45,7 +45,7 @@ export function DiffView({ conversationId, onClose, branches: branchesProp, init
   }, [branchAId, branchBId, conversationId, user]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-neutral-900">
+    <div className="fixed inset-0 z-50 flex flex-col bg-neutral-50 dark:bg-neutral-900">
       <DiffHeader
         branches={branches}
         branchAId={branchAId}
@@ -60,7 +60,7 @@ export function DiffView({ conversationId, onClose, branches: branchesProp, init
       {diffData ? (
         <div className="flex flex-1 overflow-hidden">
           <DiffBranchPanel branchName={diffData.branch_a.name} nodes={diffData.branch_a.nodes} />
-          <div className="w-px shrink-0 bg-neutral-700" />
+          <div className="w-px shrink-0 bg-neutral-200 dark:bg-neutral-700" />
           <DiffBranchPanel branchName={diffData.branch_b.name} nodes={diffData.branch_b.nodes} />
         </div>
       ) : (

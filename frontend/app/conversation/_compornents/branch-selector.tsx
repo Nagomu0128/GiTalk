@@ -19,7 +19,7 @@ export function BranchSelector({ onSwitch, onMerge, onDiff }: BranchSelectorProp
       <select
         value={activeBranchId ?? ''}
         onChange={(e) => onSwitch(e.target.value)}
-        className="rounded-lg border border-neutral-600 bg-neutral-800 px-2 py-1 text-xs text-neutral-300 outline-none"
+        className="rounded-lg border border-neutral-300 bg-white px-2 dark:border-neutral-600 dark:bg-neutral-800 py-1 text-xs text-neutral-300 outline-none"
       >
         {branches.map((branch) => (
           <option key={branch.id} value={branch.id}>
@@ -30,7 +30,7 @@ export function BranchSelector({ onSwitch, onMerge, onDiff }: BranchSelectorProp
 
       <button
         onClick={onDiff}
-        className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-600 px-2.5 text-xs text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+        className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-300 px-2.5 dark:border-neutral-600 text-xs text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
         title="ブランチを比較"
       >
         <GitCompareArrows size={14} />
@@ -39,7 +39,7 @@ export function BranchSelector({ onSwitch, onMerge, onDiff }: BranchSelectorProp
 
       <button
         onClick={onMerge}
-        className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-600 px-2.5 text-xs text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+        className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-300 px-2.5 dark:border-neutral-600 text-xs text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
         title="会話を統合"
       >
         <Merge size={14} />

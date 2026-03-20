@@ -34,9 +34,9 @@ export function CreateBranchDialog({ onSubmit, onClose }: CreateBranchDialogProp
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="!max-w-md border-neutral-600 bg-neutral-800 text-neutral-100 shadow-2xl shadow-black/60">
+      <DialogContent className="!max-w-md border-neutral-200 bg-white text-neutral-900 shadow-2xl dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:shadow-black/60">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-neutral-100">
+          <DialogTitle className="flex items-center gap-2 text-neutral-900 dark:text-neutral-100">
             <GitBranch size={18} />
             新しいブランチを作成
           </DialogTitle>
@@ -46,14 +46,14 @@ export function CreateBranchDialog({ onSubmit, onClose }: CreateBranchDialogProp
         </DialogHeader>
 
         <div className="mt-2 space-y-2">
-          <label className="block text-sm font-medium text-neutral-300">ブランチ名</label>
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">ブランチ名</label>
           <Input
             value={name}
             onChange={(e) => { setName(e.target.value); setError(''); }}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleSubmit(); }}
             placeholder="例: pricing-discussion"
             autoFocus
-            className="border-neutral-600 bg-neutral-700 text-neutral-100 placeholder:text-neutral-500 focus-visible:border-blue-500 focus-visible:ring-blue-500/30"
+            className="border-neutral-300 bg-neutral-50 text-neutral-900 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100 placeholder:text-neutral-500 focus-visible:border-blue-500 focus-visible:ring-blue-500/30"
           />
           {error && <p className="text-xs text-red-400">{error}</p>}
           <p className="text-xs text-neutral-500">100文字以内で入力してください</p>
@@ -62,7 +62,7 @@ export function CreateBranchDialog({ onSubmit, onClose }: CreateBranchDialogProp
         <div className="mt-4 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-neutral-200"
+            className="rounded-lg px-4 py-2 text-sm text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
           >
             キャンセル
           </button>
