@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Search, ArrowLeft, HelpCircle, GitBranch } from 'lucide-react';
+import { Search, ArrowLeft, HelpCircle, GitBranch, Copy } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { MessageBubble } from '@/components/chat/message-bubble';
 
@@ -38,6 +38,7 @@ const Header = ({
   visibility,
   description,
   onBack,
+  onClone,
   onSearch,
   onHelp,
 }: {
@@ -45,6 +46,7 @@ const Header = ({
   readonly visibility: 'private' | 'public';
   readonly description: string | null;
   readonly onBack: () => void;
+  readonly onClone: () => void;
   readonly onSearch: () => void;
   readonly onHelp: () => void;
 }) => (
@@ -70,6 +72,13 @@ const Header = ({
       )}
     </div>
     <div className="flex items-center gap-2">
+      <button
+        onClick={onClone}
+        className="flex items-center gap-1.5 rounded-lg border border-neutral-600 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:bg-neutral-800 hover:text-neutral-100"
+      >
+        <Copy size={13} />
+        <span>コピーして使う</span>
+      </button>
       <button
         onClick={onSearch}
         className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-600 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
@@ -138,6 +147,18 @@ export default function RepositoryDetailPage() {
     router.push('/dashboard/repositories');
   }, [router]);
 
+  const handleClone = useCallback(async () => {
+    const token = await user?.getIdToken();
+    const res = await fetch(`${API}/v1/repositories/${repoId}/clone`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      router.push(`/conversation/${data.conversationId}`);
+    }
+  }, [user, repoId, router]);
+
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-neutral-900">
@@ -157,6 +178,7 @@ export default function RepositoryDetailPage() {
           visibility={repo.visibility}
           description={repo.description}
           onBack={handleBack}
+          onClone={handleClone}
           onSearch={() => console.log('Search')}
           onHelp={() => console.log('Help')}
         />
