@@ -63,7 +63,7 @@ const PADDING_TOP = 40;
 const BRANCH_LABEL_WIDTH = 80;
 const HIGHLIGHT_COLOR = '#e05050';
 
-const ZOOM_SENSITIVITY = 0.001;
+const ZOOM_SENSITIVITY = 0.01;
 const MIN_ZOOM = 0.3;
 const MAX_ZOOM = 3;
 
@@ -1201,6 +1201,15 @@ export default function TreePage() {
     const prevent = (e: globalThis.WheelEvent) => e.preventDefault();
     container.addEventListener('wheel', prevent, { passive: false });
     return () => container.removeEventListener('wheel', prevent);
+  }, []);
+
+  // Prevent browser pinch-to-zoom on the entire page
+  useEffect(() => {
+    const preventBrowserZoom = (e: globalThis.WheelEvent) => {
+      if (e.ctrlKey) e.preventDefault();
+    };
+    document.addEventListener('wheel', preventBrowserZoom, { passive: false });
+    return () => document.removeEventListener('wheel', preventBrowserZoom);
   }, []);
 
   if (loading) return <LoadingView />;
