@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { MoreVertical, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { ThemedLogo } from '@/components/themed-logo';
 import { useAuthStore } from '@/stores/auth-store';
 import { ConversationCard } from '@/components/cards/conversation-card';
@@ -18,7 +17,6 @@ type ConversationSummary = {
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
-  const router = useRouter();
   const [conversations, setConversations] = useState<ReadonlyArray<ConversationSummary>>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
@@ -62,24 +60,6 @@ export default function DashboardPage() {
     }
   };
 
-  const handleNewConversation = async () => {
-    try {
-      const token = await user?.getIdToken();
-      if (!token) return;
-      const res = await fetch(`${API}/v1/conversations`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: '新しい会話' }),
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (!data.id) return;
-      router.push(`/conversation/${data.id}`);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   const handleDelete = async (conversationId: string) => {
     const token = await user?.getIdToken();
     const res = await fetch(`${API}/v1/conversations/${conversationId}`, {
@@ -94,17 +74,11 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col">
       {/* Header */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-300 px-6 dark:border-neutral-700">
+      <header className="flex h-14 shrink-0 items-center border-b border-neutral-300 px-6 dark:border-neutral-700">
         <div className="flex items-center gap-3">
           <ThemedLogo />
           <h1 className="text-lg font-bold text-neutral-800 dark:text-neutral-200">会話一覧</h1>
         </div>
-        <button
-          onClick={handleNewConversation}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-        >
-          <MoreVertical size={16} />
-        </button>
       </header>
 
       {/* Content */}
