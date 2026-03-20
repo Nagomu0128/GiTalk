@@ -7,6 +7,12 @@ import { buildContextContents } from '../domain/context-builder.js';
 import { errorBuilder, type InferError } from '../shared/error.js';
 import { appLogger } from '../shared/logger.js';
 
+const sanitizeAiResponse = (text: string): string =>
+  text
+    .replace(/SPECIAL INSTRUCTION:.*?(?=\n\n|\n[^S]|$)/gs, '')
+    .replace(/^(初めまして！.*?お願いします。\s*)/m, '')
+    .trim();
+
 const logger = appLogger('chatService');
 
 export const ChatError = errorBuilder('ChatError');
@@ -92,7 +98,7 @@ export const processChat = async (
     // ストリーミング完了 → 集約レスポンスからトークン数を取得
     const aggregatedResponse = await stream.response;
     const tokenCount = aggregatedResponse.usageMetadata?.totalTokenCount ?? 0;
-    const aiResponse = chunks.join('');
+    const aiResponse = sanitizeAiResponse(chunks.join(''));
 
     // ノード保存
     const nodeResult = await createNode({
