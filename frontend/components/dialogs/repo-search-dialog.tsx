@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { Search, GitBranch, Loader2, X } from 'lucide-react';
+import { Search, GitBranch, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -67,10 +67,15 @@ export const RepoSearchDialog = ({
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 100);
-    } else {
-      setQuery('');
     }
   }, [open]);
+
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    if (!nextOpen) {
+      setQuery('');
+    }
+    onOpenChange(nextOpen);
+  }, [onOpenChange]);
 
   const hits = useMemo((): ReadonlyArray<SearchHit> => {
     const trimmed = query.trim().toLowerCase();
@@ -105,15 +110,15 @@ export const RepoSearchDialog = ({
   const handleSelect = useCallback(
     (hit: SearchHit) => {
       onNavigate(hit.branchId, hit.node.id);
-      onOpenChange(false);
+      handleOpenChange(false);
     },
-    [onNavigate, onOpenChange],
+    [onNavigate, handleOpenChange],
   );
 
   const searched = query.trim().length > 0;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={false}
         className="!max-w-2xl overflow-hidden border-neutral-300 bg-neutral-50 p-6 text-neutral-900 shadow-2xl dark:border-neutral-500 dark:bg-neutral-700 dark:text-neutral-100 dark:shadow-black/60"
