@@ -2,9 +2,15 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Search, ArrowLeft, HelpCircle, GitBranch, Copy } from 'lucide-react';
+import { Search, ArrowLeft, GitBranch, Copy, Sun, Moon, LogOut } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { signOut } from 'firebase/auth';
 import { useAuthStore } from '@/stores/auth-store';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { MessageBubble } from '@/components/chat/message-bubble';
+import { RepoSearchDialog } from '@/components/dialogs/repo-search-dialog';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const API = '/api';
 
@@ -39,16 +45,12 @@ const Header = ({
   description,
   onBack,
   onClone,
-  onSearch,
-  onHelp,
 }: {
   readonly title: string;
   readonly visibility: 'private' | 'public';
   readonly description: string | null;
   readonly onBack: () => void;
   readonly onClone: () => void;
-  readonly onSearch: () => void;
-  readonly onHelp: () => void;
 }) => (
   <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-300 px-4 dark:border-neutral-700">
     <div className="flex items-center gap-3">
@@ -79,18 +81,6 @@ const Header = ({
         <Copy size={13} />
         <span>コピーして使う</span>
       </button>
-      <button
-        onClick={onSearch}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-      >
-        <Search size={14} />
-      </button>
-      <button
-        onClick={onHelp}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-      >
-        <HelpCircle size={14} />
-      </button>
     </div>
   </header>
 );
@@ -108,6 +98,8 @@ export default function RepositoryDetailPage() {
   const [branches, setBranches] = useState<ReadonlyArray<RepoBranch>>([]);
   const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -146,6 +138,14 @@ export default function RepositoryDetailPage() {
   const handleBack = useCallback(() => {
     router.push('/dashboard/repositories');
   }, [router]);
+
+  const handleSearchNavigate = useCallback((branchId: string, nodeId: string) => {
+    setSelectedBranch(branchId);
+    setTimeout(() => {
+      const el = document.getElementById(`repo-node-${nodeId}`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }, []);
 
   const [cloneDialog, setCloneDialog] = useState(false);
   const [cloneSelectedBranches, setCloneSelectedBranches] = useState<Set<string>>(new Set());
@@ -202,16 +202,20 @@ export default function RepositoryDetailPage() {
           description={repo.description}
           onBack={handleBack}
           onClone={openCloneDialog}
-          onSearch={() => console.log('Search')}
-          onHelp={() => console.log('Help')}
         />
 
         {/* Split view: branch list + conversation */}
         <div className="flex flex-1 overflow-hidden">
           {/* Branch list panel */}
           <div className="flex w-60 shrink-0 flex-col border-r border-neutral-200 dark:border-neutral-700">
-            <div className="flex h-10 shrink-0 items-center px-4">
+            <div className="flex h-10 shrink-0 items-center justify-between px-4">
               <span className="text-xs font-medium text-neutral-500">ブランチ</span>
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="flex h-6 w-6 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
+              >
+                <Search size={13} />
+              </button>
             </div>
             <div className="flex-1 overflow-y-auto px-2 pb-4">
               {branches.length === 0 && (
@@ -233,6 +237,61 @@ export default function RepositoryDetailPage() {
                 </button>
               ))}
             </div>
+
+            {/* Theme toggle */}
+            <div className="border-t border-neutral-300 px-2 py-2 dark:border-neutral-700">
+              <button
+                onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+              >
+                {resolvedTheme === 'dark' ? <Sun size={16} className="shrink-0" /> : <Moon size={16} className="shrink-0" />}
+                <span>{resolvedTheme === 'dark' ? 'ライトモード' : 'ダークモード'}</span>
+              </button>
+            </div>
+
+            {/* User info */}
+            {user && (
+              <div className="border-t border-neutral-300 px-2 py-3 dark:border-neutral-700">
+                <Popover>
+                  <PopoverTrigger
+                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  >
+                    {user.photoURL ? (
+                      <img
+                        src={user.photoURL}
+                        alt={user.displayName ?? ''}
+                        className="h-7 w-7 shrink-0 rounded-full"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-xs font-bold text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
+                        {(user.displayName ?? user.email ?? '?')[0]?.toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1 text-left">
+                      <p className="truncate text-sm text-neutral-800 dark:text-neutral-200">{user.displayName ?? 'User'}</p>
+                      <p className="truncate text-xs text-neutral-500">{user.email}</p>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    side="top"
+                    align="start"
+                    sideOffset={8}
+                    className="w-48 !rounded-2xl border-neutral-200 bg-white p-1 dark:border-neutral-600 dark:bg-neutral-800"
+                  >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start gap-2 !rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-neutral-700 dark:hover:text-red-300"
+                      onClick={() => signOut(getFirebaseAuth())}
+                    >
+                      <LogOut size={14} />
+                      ログアウト
+                    </Button>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
           </div>
 
           {/* Conversation panel */}
@@ -256,7 +315,7 @@ export default function RepositoryDetailPage() {
 
                 {/* Messages */}
                 {selectedBranchData.nodes.map((node) => (
-                  <div key={node.id}>
+                  <div key={node.id} id={`repo-node-${node.id}`}>
                     {node.userMessage && (
                       <MessageBubble role="user" content={node.userMessage} timestamp={node.originalCreatedAt} />
                     )}
@@ -315,6 +374,13 @@ export default function RepositoryDetailPage() {
           </div>
         </div>
       )}
+
+      <RepoSearchDialog
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        branches={branches}
+        onNavigate={handleSearchNavigate}
+      />
     </div>
   );
 }
