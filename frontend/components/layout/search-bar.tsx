@@ -61,25 +61,25 @@ export function SearchBar() {
           onKeyDown={handleKeyDown}
           onFocus={() => results && setShowResults(true)}
           placeholder="🔍 検索..."
-          className="w-48 rounded border border-gray-300 px-3 py-1 text-sm focus:border-blue-500 focus:outline-none"
+          className="w-48 rounded border border-neutral-600 bg-neutral-800 px-3 py-1 text-sm text-neutral-100 placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none"
         />
       </div>
 
       {showResults && results && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-96 rounded-xl border bg-white shadow-lg">
+        <div className="absolute right-0 top-full z-50 mt-1 w-96 rounded-xl border border-neutral-700 bg-neutral-800 shadow-xl shadow-black/30">
           <div className="max-h-80 overflow-y-auto p-3">
             {results.conversations.length === 0 && results.nodes.length === 0 && (
-              <p className="text-center text-sm text-gray-400">「{query}」に一致する結果はありませんでした</p>
+              <p className="text-center text-sm text-neutral-400">「{query}」に一致する結果はありませんでした</p>
             )}
 
             {results.conversations.length > 0 && (
               <div className="mb-3">
-                <h4 className="mb-1 text-xs font-medium text-gray-500">会話</h4>
+                <h4 className="mb-1 text-xs font-medium text-neutral-500">会話</h4>
                 {results.conversations.map((conv) => (
                   <button
                     key={conv.id}
                     onClick={() => { router.push(`/conversation/${conv.id}`); setShowResults(false); }}
-                    className="w-full rounded px-2 py-1.5 text-left text-sm hover:bg-gray-50"
+                    className="w-full rounded px-2 py-1.5 text-left text-sm text-neutral-200 hover:bg-neutral-700"
                   >
                     📝 {conv.title}
                   </button>
@@ -89,27 +89,27 @@ export function SearchBar() {
 
             {results.nodes.length > 0 && (
               <div>
-                <h4 className="mb-1 text-xs font-medium text-gray-500">メッセージ</h4>
+                <h4 className="mb-1 text-xs font-medium text-neutral-500">メッセージ</h4>
                 {results.nodes.map((node) => (
                   <button
                     key={node.id}
                     onClick={() => { router.push(`/conversation/${node.conversation_id}`); setShowResults(false); }}
-                    className="w-full rounded px-2 py-1.5 text-left hover:bg-gray-50"
+                    className="w-full rounded px-2 py-1.5 text-left hover:bg-neutral-700"
                   >
-                    <div className="text-xs text-gray-600">{node.conversation_title} / 🌿 {node.branch_name}</div>
+                    <div className="text-xs text-neutral-300">{node.conversation_title} / 🌿 {node.branch_name}</div>
                     {node.user_message_excerpt && (
-                      <div className="truncate text-xs text-gray-400">👤 {node.user_message_excerpt}</div>
+                      <div className="truncate text-xs text-neutral-400">👤 {node.user_message_excerpt}</div>
                     )}
                     {node.ai_response_excerpt && (
-                      <div className="truncate text-xs text-gray-400">🤖 {node.ai_response_excerpt}</div>
+                      <div className="truncate text-xs text-neutral-400">🤖 {node.ai_response_excerpt}</div>
                     )}
                   </button>
                 ))}
               </div>
             )}
           </div>
-          <div className="border-t px-3 py-2">
-            <button onClick={() => setShowResults(false)} className="text-xs text-gray-400 hover:text-gray-600">
+          <div className="border-t border-neutral-700 px-3 py-2">
+            <button onClick={() => setShowResults(false)} className="text-xs text-neutral-400 hover:text-neutral-300">
               閉じる
             </button>
           </div>
