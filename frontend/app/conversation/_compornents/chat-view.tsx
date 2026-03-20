@@ -8,6 +8,7 @@ import { useChatStore } from '@/stores/chat-store';
 
 type ChatViewProps = {
   readonly onSend: (message: string, model: string, contextMode: string) => void;
+  readonly onBranch?: (nodeId: string) => void;
 };
 
 const getNodesForActiveBranch = (
@@ -31,7 +32,7 @@ const getNodesForActiveBranch = (
   return path;
 };
 
-export function ChatView({ onSend }: ChatViewProps) {
+export function ChatView({ onSend, onBranch }: ChatViewProps) {
   const nodes = useConversationStore((s) => s.nodes);
   const branches = useConversationStore((s) => s.branches);
   const activeBranchId = useConversationStore((s) => s.activeBranchId);
@@ -69,6 +70,7 @@ export function ChatView({ onSend }: ChatViewProps) {
               content={node.aiResponse}
               model={node.model}
               timestamp={node.createdAt}
+              onBranch={onBranch ? () => onBranch(node.id) : undefined}
             />
           </div>
         ))}
