@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { MessageBubble } from './message-bubble';
+import { MessageBubble } from '@/components/chat/message-bubble';
 import { MessageInput } from './message-input';
 import { useConversationStore, type ConversationNode } from '@/stores/conversation-store';
 import { useChatStore } from '@/stores/chat-store';
