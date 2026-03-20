@@ -241,25 +241,6 @@ export default function TreePage() {
         setCherryPickConfirm({ visible: true, nodeId });
         return;
       }
-      if (action === 'switch') {
-        const targetNode = rawNodes.find((n) => n.id === nodeId);
-        if (!targetNode) return;
-        const doSwitch = async () => {
-          try {
-            const headers = await getHeaders();
-            const res = await fetch(`${API}/v1/conversations/${conversationId}/switch`, {
-              method: 'POST', headers,
-              body: JSON.stringify({ branch_id: targetNode.branchId }),
-            });
-            if (res.ok) {
-              setConversation((prev) => prev ? { ...prev, activeBranchId: targetNode.branchId } : prev);
-              await refetchAll();
-            }
-          } catch (err) { console.error('Switch error:', err); }
-        };
-        doSwitch();
-        return;
-      }
       console.log(`Action: ${action}, Node: ${nodeId}`);
     },
     [gitNodes, allEdges, conversation?.activeBranchId, conversationId, getHeaders, rawNodes, refetchAll],
@@ -352,6 +333,24 @@ export default function TreePage() {
 
       if (action === 'rename') {
         setRenameDialog({ visible: true, branchId: branch.id, currentName: branch.name });
+        return;
+      }
+
+      if (action === 'switch') {
+        const doSwitch = async () => {
+          try {
+            const headers = await getHeaders();
+            const res = await fetch(`${API}/v1/conversations/${conversationId}/switch`, {
+              method: 'POST', headers,
+              body: JSON.stringify({ branch_id: branch.id }),
+            });
+            if (res.ok) {
+              setConversation((prev) => prev ? { ...prev, activeBranchId: branch.id } : prev);
+              await refetchAll();
+            }
+          } catch (err) { console.error('Switch error:', err); }
+        };
+        doSwitch();
         return;
       }
 
