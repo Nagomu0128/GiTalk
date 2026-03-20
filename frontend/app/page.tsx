@@ -3,22 +3,20 @@ import Link from 'next/link';
 
 const FEATURES = [
   {
-    icon: '/icon-branch.png',
+    image: '/light_mode_branch_image.png',
     title: '分岐する',
     description: '会話を好きなだけ枝分かれさせて並行探索',
-    darkBg: true,
   },
   {
-    icon: '/icon-merge.png',
+    image: '/light_mode_merge_image.png',
     title: '統合する',
     description: 'ブランチの結論を一つにまとめる',
-    darkBg: true,
   },
   {
-    icon: '/icon-save.png',
+    image: '/light_mode_box_image.png',
     title: '保存する',
     description: 'リポジトリとして構造ごと保存',
-    darkBg: true,
+    size: 72,
   },
 ] as const;
 
@@ -27,9 +25,9 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white">
       {/* ヘッダー */}
       <header className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-2">
-          <Image src="/light_mode_logo.png" alt="GiTalk" width={28} height={28} />
-          <span className="text-xl font-bold text-gray-900">GiTalk</span>
+        <div className="flex items-center gap-3">
+          <Image src="/light_mode_logo_with_circle.png" alt="GiTalk" width={48} height={48} />
+          <span className="text-2xl font-bold text-gray-900">GiTalk</span>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/login" className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">
@@ -47,7 +45,7 @@ export default function LandingPage() {
       {/* ヒーロー */}
       <section className="flex flex-col items-center px-6 py-24 text-center">
         <div className="mb-6">
-          <Image src="/light_mode_logo.png" alt="GiTalk" width={120} height={120} />
+          <Image src="/light_mode_logo.png" alt="GiTalk" width={130} height={130} />
         </div>
         <h1 className="mb-4 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
           AIとの会話を、もっと構造的に。
@@ -66,18 +64,16 @@ export default function LandingPage() {
       </section>
 
       {/* 機能紹介 */}
-      <section className="border-t bg-gray-50 px-6 py-16">
-        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-8 sm:grid-cols-3">
+      <section className="border-t bg-gray-50 px-6 py-8">
+        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-3">
           {FEATURES.map((feature) => (
             <div key={feature.title} className="flex flex-col items-center text-center">
-              <div
-                className={`mb-4 flex h-16 w-16 items-center justify-center rounded-xl ${feature.darkBg ? 'bg-gray-900' : 'border border-gray-200 bg-white'}`}
-              >
+              <div className="mb-4 flex h-24 w-24 items-center justify-center">
                 <Image
-                  src={feature.icon}
+                  src={feature.image}
                   alt={feature.title}
-                  width={40}
-                  height={40}
+                  width={'size' in feature ? feature.size : 96}
+                  height={'size' in feature ? feature.size : 96}
                   className="object-contain"
                   unoptimized
                 />
@@ -90,7 +86,7 @@ export default function LandingPage() {
       </section>
 
       {/* フッター */}
-      <footer className="border-t px-6 py-6 text-center text-xs text-gray-400">
+      <footer className="border-t px-6 py-4 text-center text-xs text-gray-400">
         © 2026 GiTalk
       </footer>
     </div>
