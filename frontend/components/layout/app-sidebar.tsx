@@ -36,13 +36,13 @@ export const AppSidebar = ({
     <>
       <aside
         className={`flex h-full shrink-0 flex-col border-r border-neutral-700 bg-neutral-950 transition-all ${
-          collapsed ? 'w-12' : 'w-64'
+          collapsed ? 'w-20' : 'w-64'
         }`}
       >
-        <div className="flex h-10 items-center justify-between px-3">
-          <div className="flex items-center gap-2">
-            <Image src="/dark_mode_logo.png" alt="GiTalk" width={20} height={20} className="shrink-0" />
-            {!collapsed && <span className="text-sm font-bold text-neutral-200">GiTalk</span>}
+        <div className="flex h-12 items-center justify-between px-3">
+          <div className="flex items-center gap-2.5">
+            <Image src="/dark_mode_logo.png" alt="GiTalk" width={32} height={32} className="shrink-0" />
+            {!collapsed && <span className="text-base font-bold text-neutral-200">GiTalk</span>}
           </div>
           <button
             onClick={onToggle}
