@@ -182,13 +182,13 @@ export const SearchDialog = ({
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={isConversationScope ? 'この会話内のメッセージを検索...' : '会話やメッセージを検索...'}
-              className="h-10 border-neutral-500 bg-neutral-600 pl-9 text-neutral-100 placeholder:text-neutral-400 focus-visible:border-blue-400 focus-visible:ring-blue-400/30"
+              className="h-10 border-neutral-500 bg-neutral-600 pl-9 text-neutral-100 placeholder:text-neutral-400 focus-visible:border-neutral-400 focus-visible:ring-neutral-400/30"
             />
           </div>
           <button
             onClick={handleSearch}
             disabled={loading || !query.trim()}
-            className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-neutral-600 px-4 py-2 text-sm font-medium text-neutral-200 transition-colors hover:bg-neutral-500 disabled:opacity-50"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : '検索'}
           </button>
