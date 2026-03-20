@@ -27,29 +27,16 @@ export const ColoredEdgeComponent = memo(({
   const edgeColor = isHighlighted ? HIGHLIGHT_COLOR : (data?.edgeColor ?? '#888');
   const strokeWidth = isHighlighted ? 3 : isDashedArrow ? 1.5 : 2;
 
-  // All edges use smooth bezier curves
-  const curvature = edgeType === 'segment' ? 0.1 : 0.4;
-
-  const [edgePath] = getBezierPath({
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    sourcePosition,
-    targetPosition,
-    curvature,
-  });
-
-  const style: React.CSSProperties = {
-    stroke: edgeColor,
-    strokeWidth,
-    transition: 'stroke 0.2s, stroke-width 0.2s',
-    ...(isDashedArrow ? { strokeDasharray: '6 4' } : {}),
-  };
-
-  // For dashed arrows, add arrowhead marker
+  // Merge/cherry-pick arrows: vertical path (top/bottom → target)
   if (isDashedArrow) {
     const markerId = `arrow-${edgeType}-${id}`;
+    const goingDown = targetY > sourceY;
+    const exitY = goingDown ? sourceY + 6 : sourceY - 6;
+    const entryY = goingDown ? targetY - 6 : targetY + 6;
+    const midY = (exitY + entryY) / 2;
+
+    const path = `M ${sourceX} ${exitY} C ${sourceX} ${midY}, ${targetX} ${midY}, ${targetX} ${entryY}`;
+
     return (
       <>
         <defs>
@@ -64,20 +51,42 @@ export const ColoredEdgeComponent = memo(({
             <polygon points="0 0, 8 3, 0 6" fill={edgeColor} />
           </marker>
         </defs>
-        <BaseEdge
+        <path
           id={id}
-          path={edgePath}
-          style={{ ...style, markerEnd: `url(#${markerId})` }}
+          d={path}
+          fill="none"
+          stroke={edgeColor}
+          strokeWidth={strokeWidth}
+          strokeDasharray="6 4"
+          markerEnd={`url(#${markerId})`}
+          style={{ transition: 'stroke 0.2s' }}
         />
       </>
     );
   }
 
+  // Regular edges: smooth bezier curves
+  const curvature = edgeType === 'segment' ? 0.1 : 0.4;
+
+  const [edgePath] = getBezierPath({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    curvature,
+  });
+
   return (
     <BaseEdge
       id={id}
       path={edgePath}
-      style={style}
+      style={{
+        stroke: edgeColor,
+        strokeWidth,
+        transition: 'stroke 0.2s, stroke-width 0.2s',
+      }}
     />
   );
 });
