@@ -27,14 +27,10 @@ export const ColoredEdgeComponent = memo(({
   const edgeColor = isHighlighted ? HIGHLIGHT_COLOR : (data?.edgeColor ?? '#888');
   const strokeWidth = isHighlighted ? 3 : isDashedArrow ? 1.5 : 2;
 
-  // Merge/cherry-pick arrows: vertical path (top/bottom → target)
+  // Merge/cherry-pick: curved dashed line from source to target
   if (isDashedArrow) {
-    const markerId = `arrow-${edgeType}-${id}`;
-    const goingDown = targetY > sourceY;
-    const exitY = goingDown ? sourceY + 6 : sourceY - 6;
-    const entryY = goingDown ? targetY - 6 : targetY + 6;
-    const midY = (exitY + entryY) / 2;
-    const path = `M ${sourceX} ${exitY} C ${sourceX} ${midY}, ${targetX} ${midY}, ${targetX} ${entryY}`;
+    const midY = (sourceY + targetY) / 2;
+    const path = `M ${sourceX} ${sourceY} C ${sourceX} ${midY}, ${targetX} ${midY}, ${targetX} ${targetY}`;
 
     return (
       <path
