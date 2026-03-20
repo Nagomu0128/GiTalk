@@ -28,7 +28,7 @@ export const ColoredEdgeComponent = memo(({
   const strokeWidth = isHighlighted ? 3 : isDashedArrow ? 1.5 : 2;
 
   // All edges use bezier curves
-  const curvature = isDashedArrow ? 0.5 : edgeType === 'segment' ? 0.1 : 0.4;
+  const curvature = isDashedArrow ? 0 : edgeType === 'segment' ? 0.1 : 0.4;
 
   const [edgePath] = getBezierPath({
     sourceX,
