@@ -27,26 +27,8 @@ export const ColoredEdgeComponent = memo(({
   const edgeColor = isHighlighted ? HIGHLIGHT_COLOR : (data?.edgeColor ?? '#888');
   const strokeWidth = isHighlighted ? 3 : isDashedArrow ? 1.5 : 2;
 
-  // Merge/cherry-pick: curved dashed line from source to target
-  if (isDashedArrow) {
-    const midY = (sourceY + targetY) / 2;
-    const path = `M ${sourceX} ${sourceY} C ${sourceX} ${midY}, ${targetX} ${midY}, ${targetX} ${targetY}`;
-
-    return (
-      <path
-        id={id}
-        d={path}
-        fill="none"
-        stroke={edgeColor}
-        strokeWidth={strokeWidth}
-        strokeDasharray="6 4"
-        style={{ transition: 'stroke 0.2s' }}
-      />
-    );
-  }
-
-  // Regular edges: smooth bezier curves
-  const curvature = edgeType === 'segment' ? 0.1 : 0.4;
+  // All edges use bezier curves
+  const curvature = isDashedArrow ? 0.5 : edgeType === 'segment' ? 0.1 : 0.4;
 
   const [edgePath] = getBezierPath({
     sourceX,
@@ -66,6 +48,7 @@ export const ColoredEdgeComponent = memo(({
         stroke: edgeColor,
         strokeWidth,
         transition: 'stroke 0.2s, stroke-width 0.2s',
+        ...(isDashedArrow ? { strokeDasharray: '6 4' } : {}),
       }}
     />
   );
