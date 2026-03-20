@@ -41,10 +41,13 @@ type SearchResults = {
 export const SearchDialog = ({
   open,
   onOpenChange,
+  conversationId,
 }: {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
+  readonly conversationId?: string;
 }) => {
+  const isConversationScope = !!conversationId;
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,8 +74,14 @@ export const SearchDialog = ({
     setSearched(true);
     try {
       const token = await user?.getIdToken();
+      const params = new URLSearchParams({
+        q: trimmed,
+        scope: isConversationScope ? 'nodes' : 'all',
+        limit: '20',
+      });
+      if (conversationId) params.set('conversation_id', conversationId);
       const res = await fetch(
-        `${API}/v1/search?q=${encodeURIComponent(trimmed)}&scope=all&limit=20`,
+        `${API}/v1/search?${params.toString()}`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       if (res.ok) {
@@ -83,7 +92,7 @@ export const SearchDialog = ({
     } finally {
       setLoading(false);
     }
-  }, [query, user]);
+  }, [query, user, isConversationScope, conversationId]);
 
   const handleNavigate = useCallback(
     (conversationId: string) => {
@@ -109,7 +118,9 @@ export const SearchDialog = ({
         className="!max-w-2xl overflow-hidden border-neutral-500 bg-neutral-700 p-6 text-neutral-100 shadow-2xl shadow-black/60"
       >
         <DialogHeader>
-          <DialogTitle className="text-lg text-neutral-100">検索</DialogTitle>
+          <DialogTitle className="text-lg text-neutral-100">
+            {isConversationScope ? 'この会話内を検索' : '検索'}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="flex items-center gap-3">
@@ -123,7 +134,7 @@ export const SearchDialog = ({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="会話やメッセージを検索..."
+              placeholder={isConversationScope ? 'この会話内のメッセージを検索...' : '会話やメッセージを検索...'}
               className="h-10 border-neutral-500 bg-neutral-600 pl-9 text-neutral-100 placeholder:text-neutral-400 focus-visible:border-blue-400 focus-visible:ring-blue-400/30"
             />
           </div>
@@ -148,7 +159,7 @@ export const SearchDialog = ({
               </p>
             ) : (
               <div className="space-y-5">
-                {results && results.conversations.length > 0 && (
+                {!isConversationScope && results && results.conversations.length > 0 && (
                   <div>
                     <h4 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">
                       会話

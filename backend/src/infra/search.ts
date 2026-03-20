@@ -57,6 +57,7 @@ export const searchNodes = (
   ownerId: string,
   query: string,
   limit: number = 20,
+  conversationId?: string,
 ): ResultAsync<ReadonlyArray<NodeSearchResult>, DBSearchError> =>
   ResultAsync.fromPromise(
     db.execute(sql`
@@ -80,6 +81,7 @@ export const searchNodes = (
       JOIN branch b ON b.id = n.branch_id
       WHERE c.owner_id = ${ownerId}::uuid
         AND c.deleted_at IS NULL
+        ${conversationId ? sql`AND n.conversation_id = ${conversationId}::uuid` : sql``}
         AND (
           n.user_message ILIKE ${'%' + query + '%'}
           OR n.ai_response ILIKE ${'%' + query + '%'}
