@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { useAuthStore } from '@/stores/auth-store';
+import { useSidebar } from '@/app/conversation/_hooks/use-sidebar';
 
 const API = '/api';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { collapsed: sidebarCollapsed, toggle: toggleSidebar } = useSidebar();
 
   const handleNewChat = useCallback(async () => {
     try {
@@ -34,7 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen w-full bg-neutral-900">
       <AppSidebar
         collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed((prev) => !prev)}
+        onToggle={toggleSidebar}
         onNewChat={handleNewChat}
         onDashboard={() => router.push('/dashboard')}
         onRepositories={() => router.push('/dashboard/repositories')}

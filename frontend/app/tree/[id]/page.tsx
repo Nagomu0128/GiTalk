@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useSidebar } from '@/app/conversation/_hooks/use-sidebar';
 import { useParams, useRouter } from 'next/navigation';
 import { ReactFlowProvider, type Node as RFNode } from '@xyflow/react';
 import { Button } from '@/components/ui/button';
@@ -51,7 +52,7 @@ export default function TreePage() {
   const conversationId = params.id as string;
   const user = useAuthStore((s) => s.user);
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { collapsed: sidebarCollapsed, toggle: toggleSidebar } = useSidebar();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -407,9 +408,7 @@ export default function TreePage() {
     setBranchMenu((prev) => ({ ...prev, visible: false }));
   }, []);
 
-  const handleToggleSidebar = useCallback(() => {
-    setSidebarCollapsed((prev) => !prev);
-  }, []);
+  const handleToggleSidebar = toggleSidebar;
 
   const handleNewChat = useCallback(async () => {
     try {
