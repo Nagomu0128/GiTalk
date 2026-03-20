@@ -203,7 +203,7 @@ export const buildReactFlowNodes = (
     const isSelected = node.id === activeSelectedNodeId;
     const isOnPath = highlightedNodeIds.has(node.id);
     const isActiveBranch = gitBranches[node.branchIndex]?.isActive ?? false;
-    const dotColor = isSelected ? 'bg-amber-400' : isOnPath ? 'bg-red-400' : isActiveBranch ? 'bg-neutral-800 dark:bg-neutral-200' : 'bg-neutral-400 dark:bg-neutral-500';
+    const dotColor = isSelected ? 'bg-amber-400' : isOnPath ? 'bg-red-400' : isActiveBranch ? 'bg-neutral-700 dark:bg-neutral-300' : 'bg-neutral-400 dark:bg-neutral-500';
     return {
       id: node.id, type: 'dotNode',
       position: { x: pos.x - 5, y: pos.y - 5 },
