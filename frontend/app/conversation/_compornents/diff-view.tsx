@@ -80,7 +80,7 @@ export function DiffView({ conversationId, onClose, branches: branchesProp, init
             </select>
           </div>
           <div className="relative w-px shrink-0 bg-neutral-200 dark:bg-neutral-700">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-50 py-2 dark:bg-neutral-900">
               <button
                 onClick={fetchDiff}
                 disabled={!branchBId || loading}
