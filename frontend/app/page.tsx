@@ -25,9 +25,9 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white">
       {/* ヘッダー */}
       <header className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-2">
-          <Image src="/light_mode_logo.png" alt="GiTalk" width={28} height={28} />
-          <span className="text-xl font-bold text-gray-900">GiTalk</span>
+        <div className="flex items-center gap-3">
+          <Image src="/light_mode_logo.png" alt="GiTalk" width={40} height={40} />
+          <span className="text-2xl font-bold text-gray-900">GiTalk</span>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/login" className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">
