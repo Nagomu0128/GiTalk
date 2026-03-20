@@ -288,13 +288,12 @@ export default function TreePage() {
     setHighlightedEdgeIds(new Set());
   }, []);
 
-  const handleNewBranchConfirm = useCallback(async () => {
+  const handleNewBranchConfirm = useCallback(async (branchName: string) => {
     const nodeId = newBranchDialog.nodeId;
     if (!nodeId) return;
     setNewBranchLoading(true);
     try {
       const headers = await getHeaders();
-      const branchName = `branch-${Date.now()}`;
       const createRes = await fetch(`${API}/v1/conversations/${conversationId}/branches`, {
         method: 'POST', headers,
         body: JSON.stringify({ name: branchName, base_node_id: nodeId }),
@@ -490,7 +489,6 @@ export default function TreePage() {
       <NewBranchDialog
         visible={newBranchDialog.visible}
         loading={newBranchLoading}
-        position={newBranchDialog.position}
         onConfirm={handleNewBranchConfirm}
         onCancel={handleNewBranchCancel}
       />
