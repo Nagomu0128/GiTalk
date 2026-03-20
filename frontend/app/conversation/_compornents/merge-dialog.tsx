@@ -30,66 +30,73 @@ export function MergeDialog({ onMerge, onClose, isLoading = false }: MergeDialog
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">会話を統合</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-900 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-neutral-100">会話を統合</h2>
+          <button onClick={onClose} className="text-neutral-500 transition-colors hover:text-neutral-300">✕</button>
         </div>
 
         <div className="mb-4">
-          <label className="mb-1 block text-sm font-medium text-gray-700">マージ元</label>
+          <label className="mb-1.5 block text-sm font-medium text-neutral-400">マージ元</label>
           <select
             value={sourceBranchId}
             onChange={(e) => setSourceBranchId(e.target.value)}
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-200 outline-none transition-colors focus:border-neutral-500"
           >
             <option value="">ブランチを選択...</option>
             {otherBranches.map((b) => (
-              <option key={b.id} value={b.id}>🌿 {b.name}</option>
+              <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
         </div>
 
-        <div className="mb-4">
-          <label className="mb-1 block text-sm font-medium text-gray-700">
-            マージ先: 🌿 {branches.find((b) => b.id === activeBranchId)?.name}
-          </label>
+        <div className="mb-5">
+          <p className="text-sm text-neutral-400">
+            マージ先: <span className="font-medium text-neutral-200">{branches.find((b) => b.id === activeBranchId)?.name}</span>
+          </p>
         </div>
 
         <div className="mb-6">
-          <label className="mb-2 block text-sm font-medium text-gray-700">要約の粒度</label>
-          {STRATEGIES.map((s) => (
-            <label key={s.value} className="mb-2 flex items-start gap-2">
-              <input
-                type="radio"
-                name="strategy"
-                value={s.value}
-                checked={strategy === s.value}
-                onChange={(e) => setStrategy(e.target.value)}
-                className="mt-1"
-              />
-              <div>
-                <span className="text-sm font-medium">{s.label}</span>
-                <span className="block text-xs text-gray-400">{s.description}</span>
-              </div>
-            </label>
-          ))}
+          <label className="mb-2 block text-sm font-medium text-neutral-400">要約の粒度</label>
+          <div className="space-y-1">
+            {STRATEGIES.map((s) => (
+              <label
+                key={s.value}
+                className={`flex cursor-pointer items-start gap-2.5 rounded-lg px-3 py-2 transition-colors ${
+                  strategy === s.value ? 'bg-neutral-800' : 'hover:bg-neutral-800/50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="strategy"
+                  value={s.value}
+                  checked={strategy === s.value}
+                  onChange={(e) => setStrategy(e.target.value)}
+                  className="mt-0.5 accent-neutral-400"
+                />
+                <div>
+                  <span className="text-sm font-medium text-neutral-200">{s.label}</span>
+                  <span className="block text-xs text-neutral-500">{s.description}</span>
+                </div>
+              </label>
+            ))}
+          </div>
         </div>
 
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+            className="rounded-lg px-4 py-2 text-sm text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
           >
             キャンセル
           </button>
           <button
             onClick={handleSubmit}
             disabled={!sourceBranchId || isLoading}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-lg bg-neutral-200 px-4 py-2 text-sm font-medium text-neutral-900 transition-colors hover:bg-white disabled:opacity-40"
           >
-            {isLoading ? 'AIが要約を生成しています...' : '統合する'}
+            {isLoading ? '要約を生成中...' : '統合する'}
           </button>
         </div>
       </div>
