@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useSidebar } from '@/app/conversation/_hooks/use-sidebar';
 import { useParams, useRouter } from 'next/navigation';
 import { ReactFlowProvider, type Node as RFNode } from '@xyflow/react';
 import { Button } from '@/components/ui/button';
@@ -21,11 +22,11 @@ import {
 } from '../_components/data-utils';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { Header } from '../_components/header';
-import { ChatInput } from '../_components/chat-input';
 import { ChatPanel } from '../_components/chat-panel';
 import { NodeContextMenuPopover } from '../_components/context-menu';
 import { BranchPopover } from '../_components/branch-menu';
 import { NewBranchDialog } from '../_components/new-branch-dialog';
+import { RenameBranchDialog } from '../_components/rename-branch-dialog';
 import { CherryPickConfirmDialog } from '../_components/cherry-pick-dialog';
 import { TreeFlowInner } from '../_components/tree-flow';
 import { DiffView } from '@/app/conversation/_compornents/diff-view';
@@ -40,7 +41,7 @@ const ErrorView = ({ message, onBack }: { readonly message: string; readonly onB
   <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-neutral-900">
     <div className="text-neutral-400">{message}</div>
     <Button variant="outline" onClick={onBack}>
-      ダッシュボードに戻る
+      会話一覧に戻る
     </Button>
   </div>
 );
@@ -51,8 +52,7 @@ export default function TreePage() {
   const conversationId = params.id as string;
   const user = useAuthStore((s) => s.user);
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [chatInput, setChatInput] = useState('');
+  const { collapsed: sidebarCollapsed, toggle: toggleSidebar } = useSidebar();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,6 +81,8 @@ export default function TreePage() {
   const [newBranchLoading, setNewBranchLoading] = useState(false);
 
   const [cherryPickConfirm, setCherryPickConfirm] = useState<{ visible: boolean; nodeId: string }>({ visible: false, nodeId: '' });
+  const [renameDialog, setRenameDialog] = useState<{ visible: boolean; branchId: string; currentName: string }>({ visible: false, branchId: '', currentName: '' });
+  const [renameLoading, setRenameLoading] = useState(false);
   const [activeSelectedNodeId, setActiveSelectedNodeId] = useState<string | null>(null);
   const [highlightedEdgeIds, setHighlightedEdgeIds] = useState<ReadonlySet<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -288,13 +290,12 @@ export default function TreePage() {
     setHighlightedEdgeIds(new Set());
   }, []);
 
-  const handleNewBranchConfirm = useCallback(async () => {
+  const handleNewBranchConfirm = useCallback(async (branchName: string) => {
     const nodeId = newBranchDialog.nodeId;
     if (!nodeId) return;
     setNewBranchLoading(true);
     try {
       const headers = await getHeaders();
-      const branchName = `branch-${Date.now()}`;
       const createRes = await fetch(`${API}/v1/conversations/${conversationId}/branches`, {
         method: 'POST', headers,
         body: JSON.stringify({ name: branchName, base_node_id: nodeId }),
@@ -315,6 +316,23 @@ export default function TreePage() {
     setNewBranchDialog({ visible: false, nodeId: '', position: { x: 0, y: 0 } });
   }, []);
 
+  const handleRenameConfirm = useCallback(async (newName: string) => {
+    if (!renameDialog.branchId) return;
+    setRenameLoading(true);
+    try {
+      const headers = await getHeaders();
+      const res = await fetch(`${API}/v1/conversations/${conversationId}/branches/${renameDialog.branchId}`, {
+        method: 'PATCH', headers,
+        body: JSON.stringify({ name: newName }),
+      });
+      if (res.ok) {
+        setRawBranches((prev) => prev.map((b) => b.id === renameDialog.branchId ? { ...b, name: newName } : b));
+        setRenameDialog({ visible: false, branchId: '', currentName: '' });
+      }
+    } catch (err) { console.error('Failed to rename branch:', err); }
+    finally { setRenameLoading(false); }
+  }, [renameDialog.branchId, conversationId, getHeaders]);
+
   const handleBranchLabelClick = useCallback((branchIndex: number, event: React.MouseEvent) => {
     event.stopPropagation();
     setBranchMenu((prev) =>
@@ -328,6 +346,11 @@ export default function TreePage() {
     async (action: string, branchIndex: number) => {
       const branch = rawBranches[branchIndex];
       if (!branch) return;
+
+      if (action === 'rename') {
+        setRenameDialog({ visible: true, branchId: branch.id, currentName: branch.name });
+        return;
+      }
 
       if (action === 'diff') {
         setDiffView({ visible: true, branchId: branch.id });
@@ -385,9 +408,7 @@ export default function TreePage() {
     setBranchMenu((prev) => ({ ...prev, visible: false }));
   }, []);
 
-  const handleToggleSidebar = useCallback(() => {
-    setSidebarCollapsed((prev) => !prev);
-  }, []);
+  const handleToggleSidebar = toggleSidebar;
 
   const handleNewChat = useCallback(async () => {
     try {
@@ -409,11 +430,6 @@ export default function TreePage() {
   const handleBack = useCallback(() => { router.push(`/conversation/${conversationId}`); }, [router, conversationId]);
   const handleHelp = useCallback(() => { console.log('Help'); }, []);
 
-  const handleChatSubmit = useCallback(() => {
-    if (!chatInput.trim()) return;
-    console.log('Submit:', chatInput);
-    setChatInput('');
-  }, [chatInput]);
 
   if (loading) return <LoadingView />;
   if (error) return <ErrorView message={error} onBack={() => router.push('/dashboard')} />;
@@ -424,7 +440,6 @@ export default function TreePage() {
         collapsed={sidebarCollapsed}
         onToggle={handleToggleSidebar}
         onNewChat={handleNewChat}
-        onSearch={handleSearch}
         onDashboard={handleDashboard}
         onRepositories={() => router.push('/dashboard/repositories')}
         user={user ? { displayName: user.displayName, email: user.email, photoURL: user.photoURL } : null}
@@ -474,11 +489,7 @@ export default function TreePage() {
           />
         </div>
 
-        <ChatInput
-          value={chatInput}
-          onChange={setChatInput}
-          onSubmit={handleChatSubmit}
-        />
+
       </div>
 
       {chatPanelNodeId && (
@@ -491,7 +502,6 @@ export default function TreePage() {
       <NewBranchDialog
         visible={newBranchDialog.visible}
         loading={newBranchLoading}
-        position={newBranchDialog.position}
         onConfirm={handleNewBranchConfirm}
         onCancel={handleNewBranchCancel}
       />
@@ -510,6 +520,14 @@ export default function TreePage() {
           onClose={() => setDiffView({ visible: false, branchId: '' })}
         />
       )}
+
+      <RenameBranchDialog
+        open={renameDialog.visible}
+        currentName={renameDialog.currentName}
+        loading={renameLoading}
+        onSubmit={handleRenameConfirm}
+        onClose={() => setRenameDialog({ visible: false, branchId: '', currentName: '' })}
+      />
     </div>
   );
 }

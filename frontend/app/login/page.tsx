@@ -20,8 +20,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-lg">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-50">
+      <div
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.07]"
+        style={{ backgroundImage: "url('/light_mode_login_background_image.png')" }}
+      />
+      <div className="relative w-full max-w-sm rounded-2xl bg-white/90 p-8 shadow-lg backdrop-blur-sm">
         <div className="mb-8 text-center">
           <Image src="/light_mode_logo.png" alt="GiTalk" width={64} height={64} className="mx-auto mb-3" />
           <h1 className="mb-2 text-3xl font-bold text-gray-900">GiTalk</h1>

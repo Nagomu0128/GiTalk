@@ -11,12 +11,15 @@ import { MergeDialog } from '@/app/conversation/_compornents/merge-dialog';
 import { DiffView } from '@/app/conversation/_compornents/diff-view';
 import { CreateBranchDialog } from '@/app/conversation/_compornents/create-branch-dialog';
 import { PushDialog } from '@/app/conversation/_compornents/push-dialog';
+import { DeleteDialog } from '@/app/conversation/_compornents/delete-dialog';
+import { SearchDialog } from '@/components/layout/search-dialog';
 import { useConversationStore } from '@/stores/conversation-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useConversationApi } from '@/app/conversation/_hooks/use-conversation-api';
 import { useChatHandler } from '@/app/conversation/_hooks/use-chat-handler';
 import { useBranchActions } from '@/app/conversation/_hooks/use-branch-actions';
 import { useDialogState } from '@/app/conversation/_hooks/use-dialog-state';
+import { useSidebar } from '@/app/conversation/_hooks/use-sidebar';
 
 export default function ConversationPage() {
   const params = useParams();
@@ -26,7 +29,8 @@ export default function ConversationPage() {
   const conversation = useConversationStore((s) => s.conversation);
   const nodes = useConversationStore((s) => s.nodes);
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { collapsed: sidebarCollapsed, toggle: toggleSidebar } = useSidebar();
+  const [convSearchOpen, setConvSearchOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
 
   const { getHeaders, refetchAll } = useConversationApi(conversationId);
@@ -63,6 +67,16 @@ export default function ConversationPage() {
     if (success) dialogs.closeMergeDialog();
   }, [handleMerge, dialogs]);
 
+  const handleDelete = useCallback(async () => {
+    const token = await user?.getIdToken();
+    if (!token) return;
+    const res = await fetch(`/api/v1/conversations/${conversationId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) router.push('/dashboard');
+  }, [user, conversationId, router]);
+
   if (!conversation) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-neutral-900">
@@ -75,9 +89,8 @@ export default function ConversationPage() {
     <div className="flex h-screen w-full bg-neutral-900">
       <AppSidebar
         collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed((prev) => !prev)}
+        onToggle={toggleSidebar}
         onNewChat={handleNewChat}
-        onSearch={() => console.log('Search')}
         onDashboard={() => router.push('/dashboard')}
         onRepositories={() => router.push('/dashboard/repositories')}
         user={user ? { displayName: user.displayName, email: user.email, photoURL: user.photoURL } : null}
@@ -87,9 +100,10 @@ export default function ConversationPage() {
         <ConversationHeader
           title={conversation.title}
           onBack={() => router.push(`/tree/${conversationId}`)}
-          onSearch={() => console.log('Search')}
+          onSearch={() => setConvSearchOpen(true)}
           onHelp={() => console.log('Help')}
-          onMore={dialogs.openPushDialog}
+          onPush={dialogs.openPushDialog}
+          onMore={dialogs.openDeleteDialog}
           branchSelector={
             nodes.length > 0 ? (
               <BranchSelector
@@ -133,12 +147,22 @@ export default function ConversationPage() {
         <PushDialog conversationId={conversationId} onClose={dialogs.closePushDialog} />
       )}
 
+      {dialogs.showDeleteDialog && (
+        <DeleteDialog onDelete={handleDelete} onClose={dialogs.closeDeleteDialog} />
+      )}
+
       {branchBaseNodeId && (
         <CreateBranchDialog
           onSubmit={handleBranchSubmit}
           onClose={closeBranchDialog}
         />
       )}
+
+      <SearchDialog
+        open={convSearchOpen}
+        onOpenChange={setConvSearchOpen}
+        conversationId={conversationId}
+      />
     </div>
   );
 }

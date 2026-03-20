@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { MoreVertical, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { ConversationCard } from '@/components/cards/conversation-card';
@@ -95,10 +96,8 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-700 px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-neutral-300 bg-neutral-800 text-sm font-bold text-neutral-200">
-            G
-          </div>
-          <h1 className="text-lg font-bold text-neutral-200">Dash Board</h1>
+          <Image src="/dark_mode_logo.png" alt="GiTalk" width={44} height={44} />
+          <h1 className="text-lg font-bold text-neutral-200">会話一覧</h1>
         </div>
         <button
           onClick={handleNewConversation}
