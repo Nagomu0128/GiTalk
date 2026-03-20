@@ -64,8 +64,8 @@ export default function LandingPage() {
       </section>
 
       {/* 機能紹介 */}
-      <section className="border-t bg-gray-50 px-6 py-16">
-        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-8 sm:grid-cols-3">
+      <section className="border-t bg-gray-50 px-6 py-8">
+        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-3">
           {FEATURES.map((feature) => (
             <div key={feature.title} className="flex flex-col items-center text-center">
               <div className="mb-4 flex h-24 w-24 items-center justify-center">
@@ -86,7 +86,7 @@ export default function LandingPage() {
       </section>
 
       {/* フッター */}
-      <footer className="border-t px-6 py-6 text-center text-xs text-gray-400">
+      <footer className="border-t px-6 py-4 text-center text-xs text-gray-400">
         © 2026 GiTalk
       </footer>
     </div>
