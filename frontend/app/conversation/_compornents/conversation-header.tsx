@@ -33,7 +33,8 @@ export const ConversationHeader = ({
       {branchSelector}
       <button
         onClick={onPush}
-        className="flex h-8 items-center gap-1.5 rounded-full border border-neutral-300 px-3 text-sm text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+        className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-300 px-2.5 text-xs text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+        title="リポジトリに保存"
       >
         <Save size={14} />
         <span>保存</span>
