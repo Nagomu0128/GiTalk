@@ -36,7 +36,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed((prev) => !prev)}
         onNewChat={handleNewChat}
-        onSearch={() => console.log('Search')}
         onDashboard={() => router.push('/dashboard')}
         onRepositories={() => router.push('/dashboard/repositories')}
         user={user ? { displayName: user.displayName, email: user.email, photoURL: user.photoURL } : null}

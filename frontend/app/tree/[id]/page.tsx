@@ -424,7 +424,6 @@ export default function TreePage() {
         collapsed={sidebarCollapsed}
         onToggle={handleToggleSidebar}
         onNewChat={handleNewChat}
-        onSearch={handleSearch}
         onDashboard={handleDashboard}
         onRepositories={() => router.push('/dashboard/repositories')}
         user={user ? { displayName: user.displayName, email: user.email, photoURL: user.photoURL } : null}
