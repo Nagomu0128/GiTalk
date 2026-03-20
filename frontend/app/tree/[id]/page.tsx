@@ -60,7 +60,7 @@ export default function TreePage() {
   const [rawBranches, setRawBranches] = useState<ReadonlyArray<Branch>>([]);
   const [rawNodes, setRawNodes] = useState<ReadonlyArray<ConversationNode>>([]);
 
-  const gitBranches = useMemo(() => convertBranches(rawBranches), [rawBranches]);
+  const gitBranches = useMemo(() => convertBranches(rawBranches, conversation?.activeBranchId ?? null), [rawBranches, conversation?.activeBranchId]);
   const gitNodes = useMemo(() => convertNodes(rawNodes, rawBranches), [rawNodes, rawBranches]);
   const selectedNodeId = useMemo(
     () => findSelectedNodeId(rawBranches, conversation?.activeBranchId ?? null),
@@ -103,7 +103,7 @@ export default function TreePage() {
   }, [selectedNodeId]);
 
   const maxColumn = gitNodes.length > 0 ? Math.max(...gitNodes.map((n) => n.column)) : 0;
-  const allEdges = useMemo(() => buildAllEdges(gitNodes, gitBranches), [gitNodes, gitBranches]);
+  const allEdges = useMemo(() => buildAllEdges(gitNodes, gitBranches, rawNodes, rawBranches), [gitNodes, gitBranches, rawNodes, rawBranches]);
 
   const highlightedNodeIds = useMemo(() => {
     const ids = new Set<string>();
@@ -117,8 +117,8 @@ export default function TreePage() {
   }, [allEdges, highlightedEdgeIds]);
 
   const rfNodes = useMemo(
-    () => buildReactFlowNodes(gitNodes, gitBranches, activeSelectedNodeId, highlightedNodeIds, maxColumn, branchMenu.visible, branchMenu.branchIndex, mergeState),
-    [gitNodes, gitBranches, activeSelectedNodeId, highlightedNodeIds, maxColumn, branchMenu.visible, branchMenu.branchIndex, mergeState],
+    () => buildReactFlowNodes(gitNodes, gitBranches, activeSelectedNodeId, highlightedNodeIds, maxColumn, branchMenu.visible, branchMenu.branchIndex, mergeState, rawNodes, rawBranches),
+    [gitNodes, gitBranches, activeSelectedNodeId, highlightedNodeIds, maxColumn, branchMenu.visible, branchMenu.branchIndex, mergeState, rawNodes, rawBranches],
   );
 
   const rfEdges = useMemo(

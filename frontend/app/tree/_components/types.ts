@@ -5,11 +5,15 @@ export type GitNode = {
   readonly branchIndex: number;
   readonly column: number;
   readonly parentIds: ReadonlyArray<string>;
+  readonly nodeType: 'message' | 'summary' | 'system';
+  readonly metadata: unknown;
 };
 
 export type GitBranch = {
   readonly name: string;
   readonly color: string;
+  readonly id: string;
+  readonly isActive: boolean;
 };
 
 export type ContextMenuState = {
@@ -36,6 +40,8 @@ export type DotNodeData = {
   dotColor: string;
   isSelected: boolean;
   gitNodeId: string;
+  isMergeDot: boolean;
+  isActiveBranch: boolean;
 };
 
 export type BranchLabelNodeData = {
@@ -45,19 +51,20 @@ export type BranchLabelNodeData = {
   isMergeHighlighted: boolean;
   mergeRole: 'merge-target' | 'merge-source' | null;
   branchColor: string;
+  isActiveBranch: boolean;
 };
 
 export type ColoredEdgeData = {
   edgeColor: string;
   isHighlighted: boolean;
-  edgeType: 'segment' | 'connection';
+  edgeType: 'segment' | 'connection' | 'merge-arrow' | 'cherry-pick-arrow';
 };
 
 export type GraphEdge = {
   readonly id: string;
   readonly fromNodeId: string;
   readonly toNodeId: string;
-  readonly edgeType: 'segment' | 'connection';
+  readonly edgeType: 'segment' | 'connection' | 'merge-arrow' | 'cherry-pick-arrow';
   readonly defaultColor: string;
 };
 
@@ -65,12 +72,14 @@ export type GraphEdge = {
 
 export const API = '/api';
 
-export const COLUMN_GAP = 40;
-export const ROW_GAP = 50;
-export const PADDING_LEFT = 40;
+export const COLUMN_GAP = 60;
+export const ROW_GAP = 70;
+export const PADDING_LEFT = 30;
 export const PADDING_TOP = 40;
 export const BRANCH_LABEL_WIDTH = 80;
 export const HIGHLIGHT_COLOR = '#e05050';
+export const MERGE_ARROW_COLOR = '#8b5cf6';
+export const CHERRY_PICK_ARROW_COLOR = '#f59e0b';
 export const MERGE_LABEL_WIDTH = 120;
 
 export const CONTEXT_MENU_ITEMS = ['read', 'switch', 'cherry-pick', 'new branch'] as const;
