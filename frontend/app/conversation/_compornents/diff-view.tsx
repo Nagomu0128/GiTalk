@@ -75,7 +75,7 @@ export function DiffView({ conversationId, onClose, branches: branchesProp, init
               <button
                 onClick={fetchDiff}
                 disabled={!branchBId || loading}
-                className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-neutral-900 transition-colors hover:bg-amber-400 disabled:opacity-50"
+                className="whitespace-nowrap rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-neutral-900 transition-colors hover:bg-amber-400 disabled:opacity-50"
               >
                 {loading ? '比較中...' : '比較する'}
               </button>
