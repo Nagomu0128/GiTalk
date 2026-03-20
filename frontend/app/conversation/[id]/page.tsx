@@ -116,7 +116,7 @@ export default function ConversationPage() {
         />
 
         <div className="flex-1 overflow-hidden">
-          <ChatView onSend={handleSend} />
+          <ChatView onSend={handleSend} onBranch={handleBranchRequest} />
         </div>
       </div>
 
