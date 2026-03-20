@@ -50,23 +50,23 @@ const Header = ({
   readonly onSearch: () => void;
   readonly onHelp: () => void;
 }) => (
-  <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-700 px-4">
+  <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-300 px-4 dark:border-neutral-700">
     <div className="flex items-center gap-3">
       <button
         onClick={onBack}
-        className="flex items-center gap-2 text-sm text-neutral-300 transition-colors hover:text-neutral-100"
+        className="flex items-center gap-2 text-sm text-neutral-800 transition-colors hover:text-neutral-950 dark:text-neutral-300 dark:hover:text-neutral-100"
       >
         <ArrowLeft size={16} />
         <span>リポジトリ一覧</span>
       </button>
-      <span className="text-neutral-600">|</span>
-      <span className="truncate text-sm font-medium text-neutral-200">{title}</span>
-      <span className="rounded border border-neutral-600 px-2 py-0.5 text-xs text-neutral-400">
+      <span className="text-neutral-300 dark:text-neutral-600">|</span>
+      <span className="truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">{title}</span>
+      <span className="rounded border border-neutral-300 px-2 py-0.5 text-xs text-neutral-600 dark:border-neutral-600 dark:text-neutral-400">
         {visibility}
       </span>
       {description && (
         <>
-          <span className="text-neutral-600">|</span>
+          <span className="text-neutral-300 dark:text-neutral-600">|</span>
           <span className="truncate text-xs text-neutral-500">{description}</span>
         </>
       )}
@@ -74,20 +74,20 @@ const Header = ({
     <div className="flex items-center gap-2">
       <button
         onClick={onClone}
-        className="flex items-center gap-1.5 rounded-lg border border-neutral-600 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:bg-neutral-800 hover:text-neutral-100"
+        className="flex items-center gap-1.5 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
       >
         <Copy size={13} />
         <span>コピーして使う</span>
       </button>
       <button
         onClick={onSearch}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-600 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
       >
         <Search size={14} />
       </button>
       <button
         onClick={onHelp}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-600 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
       >
         <HelpCircle size={14} />
       </button>
@@ -184,8 +184,8 @@ export default function RepositoryDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-neutral-900">
-        <div className="text-neutral-400">読み込み中...</div>
+      <div className="flex h-screen w-full items-center justify-center bg-neutral-100 dark:bg-neutral-900">
+        <div className="text-neutral-500 dark:text-neutral-400">読み込み中...</div>
       </div>
     );
   }
@@ -193,7 +193,7 @@ export default function RepositoryDetailPage() {
   if (!repo) return null;
 
   return (
-    <div className="flex h-screen w-full bg-neutral-900">
+    <div className="flex h-screen w-full bg-neutral-100 dark:bg-neutral-900">
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
         <Header
@@ -209,7 +209,7 @@ export default function RepositoryDetailPage() {
         {/* Split view: branch list + conversation */}
         <div className="flex flex-1 overflow-hidden">
           {/* Branch list panel */}
-          <div className="flex w-60 shrink-0 flex-col border-r border-neutral-700">
+          <div className="flex w-60 shrink-0 flex-col border-r border-neutral-200 dark:border-neutral-700">
             <div className="flex h-10 shrink-0 items-center px-4">
               <span className="text-xs font-medium text-neutral-500">ブランチ</span>
             </div>
@@ -223,8 +223,8 @@ export default function RepositoryDetailPage() {
                   onClick={() => setSelectedBranch(branch.repository_branch_id)}
                   className={`mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
                     selectedBranch === branch.repository_branch_id
-                      ? 'bg-neutral-700 text-neutral-100'
-                      : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200'
+                      ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
+                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
                   }`}
                 >
                   <GitBranch size={14} className="shrink-0" />
@@ -250,7 +250,7 @@ export default function RepositoryDetailPage() {
                 {/* Branch name header */}
                 <div className="mb-6 flex items-center gap-2">
                   <GitBranch size={14} className="text-neutral-500" />
-                  <span className="text-sm font-medium text-neutral-300">{selectedBranchData.name}</span>
+                  <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{selectedBranchData.name}</span>
                   <span className="text-xs text-neutral-500">({selectedBranchData.nodes.length} nodes)</span>
                 </div>
 
@@ -274,21 +274,21 @@ export default function RepositoryDetailPage() {
       {/* Clone Dialog */}
       {cloneDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-sm rounded-2xl border border-neutral-700 bg-neutral-800 p-6 shadow-xl">
-            <h3 className="mb-2 text-base font-bold text-neutral-100">この会話をコピーしますか？</h3>
-            <p className="mb-4 text-sm text-neutral-400">
+          <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-700 dark:bg-neutral-800">
+            <h3 className="mb-2 text-base font-bold text-neutral-900 dark:text-neutral-100">この会話をコピーしますか？</h3>
+            <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
               選択したブランチの会話を自分の会話としてコピーします。
             </p>
 
             <div className="mb-5">
               <p className="mb-2 text-xs font-medium text-neutral-500">ブランチ選択</p>
               {branches.map((branch) => (
-                <label key={branch.repository_branch_id} className="flex items-center gap-2 py-1 text-sm text-neutral-300">
+                <label key={branch.repository_branch_id} className="flex items-center gap-2 py-1 text-sm text-neutral-700 dark:text-neutral-300">
                   <input
                     type="checkbox"
                     checked={cloneSelectedBranches.has(branch.repository_branch_id)}
                     onChange={() => toggleCloneBranch(branch.repository_branch_id)}
-                    className="rounded border-neutral-600"
+                    className="rounded border-neutral-300 dark:border-neutral-600"
                   />
                   <GitBranch size={13} className="text-neutral-500" />
                   {branch.name}
@@ -300,7 +300,7 @@ export default function RepositoryDetailPage() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setCloneDialog(false)}
-                className="rounded-lg px-3 py-1.5 text-sm text-neutral-400 hover:text-neutral-200"
+                className="rounded-lg px-3 py-1.5 text-sm text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
               >
                 キャンセル
               </button>

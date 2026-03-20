@@ -162,10 +162,10 @@ export const SearchDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="!max-w-2xl overflow-hidden border-neutral-500 bg-neutral-700 p-6 text-neutral-100 shadow-2xl shadow-black/60"
+        className="!max-w-2xl overflow-hidden border-neutral-300 bg-neutral-50 p-6 text-neutral-900 shadow-2xl dark:border-neutral-500 dark:bg-neutral-700 dark:text-neutral-100 dark:shadow-black/60"
       >
         <DialogHeader>
-          <DialogTitle className="text-lg text-neutral-100">
+          <DialogTitle className="text-lg text-neutral-900 dark:text-neutral-100">
             {isConversationScope ? 'この会話内を検索' : '検索'}
           </DialogTitle>
         </DialogHeader>
@@ -182,7 +182,7 @@ export const SearchDialog = ({
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={isConversationScope ? 'この会話内のメッセージを検索...' : '会話やメッセージを検索...'}
-              className="h-10 border-neutral-500 bg-neutral-600 pl-9 text-neutral-100 placeholder:text-neutral-400 focus-visible:border-neutral-400 focus-visible:ring-neutral-400/30"
+              className="h-10 border-neutral-300 bg-neutral-50 pl-9 text-neutral-900 placeholder:text-neutral-400 focus-visible:border-blue-400 focus-visible:ring-blue-400/30 dark:border-neutral-500 dark:bg-neutral-600 dark:text-neutral-100"
             />
           </div>
           <button
@@ -216,7 +216,7 @@ export const SearchDialog = ({
                         <button
                           key={conv.id}
                           onClick={() => handleNavigate(conv.id)}
-                          className="flex w-full min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-neutral-100 transition-colors hover:bg-neutral-600"
+                          className="flex w-full min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-neutral-100 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-600"
                         >
                           <MessageSquare size={15} className="shrink-0 text-neutral-400" />
                           <span className="min-w-0 truncate">{conv.title}</span>
@@ -236,9 +236,9 @@ export const SearchDialog = ({
                         <button
                           key={node.id}
                           onClick={() => handleNavigate(node.conversation_id, node.id)}
-                          className="block w-full min-w-0 overflow-hidden rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-neutral-600"
+                          className="block w-full min-w-0 overflow-hidden rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-600"
                         >
-                          <div className="flex min-w-0 items-center gap-1.5 text-xs text-neutral-200">
+                          <div className="flex min-w-0 items-center gap-1.5 text-xs text-neutral-800 dark:text-neutral-200">
                             <span className="min-w-0 truncate font-medium">{node.conversation_title}</span>
                             <span className="shrink-0 text-neutral-500">/</span>
                             <GitBranch size={11} className="shrink-0 text-neutral-400" />
