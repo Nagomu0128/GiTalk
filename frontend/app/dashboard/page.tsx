@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 import { ThemedLogo } from '@/components/themed-logo';
 import { useAuthStore } from '@/stores/auth-store';
