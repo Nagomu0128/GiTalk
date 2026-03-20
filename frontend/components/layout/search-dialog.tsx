@@ -94,25 +94,59 @@ export const SearchDialog = ({
     }
   }, [query, user, isConversationScope, conversationId]);
 
+  const highlightText = useCallback((container: HTMLElement, searchText: string) => {
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    const lowerSearch = searchText.toLowerCase();
+    const matches: { node: Text; index: number }[] = [];
+
+    let node: Text | null;
+    while ((node = walker.nextNode() as Text | null)) {
+      const idx = node.textContent?.toLowerCase().indexOf(lowerSearch) ?? -1;
+      if (idx >= 0) matches.push({ node, index: idx });
+    }
+
+    const marks: HTMLElement[] = [];
+    matches.forEach(({ node: textNode, index }) => {
+      const range = document.createRange();
+      range.setStart(textNode, index);
+      range.setEnd(textNode, index + searchText.length);
+      const mark = document.createElement('mark');
+      mark.className = 'bg-yellow-400/60 text-inherit rounded-sm px-0.5';
+      range.surroundContents(mark);
+      marks.push(mark);
+    });
+
+    if (marks[0]) {
+      marks[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // 3秒後にハイライト解除
+    setTimeout(() => {
+      marks.forEach((mark) => {
+        const parent = mark.parentNode;
+        if (!parent) return;
+        parent.replaceChild(document.createTextNode(mark.textContent ?? ''), mark);
+        parent.normalize();
+      });
+    }, 3000);
+  }, []);
+
   const handleNavigate = useCallback(
     (targetConversationId: string, nodeId?: string) => {
       onOpenChange(false);
 
       if (isConversationScope && nodeId) {
-        // 会話内検索: 該当ノードまでスクロール+ハイライト
         setTimeout(() => {
           const el = document.getElementById(`node-${nodeId}`);
           if (!el) return;
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          el.classList.add('ring-2', 'ring-blue-500/60', 'rounded-lg');
-          setTimeout(() => el.classList.remove('ring-2', 'ring-blue-500/60', 'rounded-lg'), 2000);
+          highlightText(el, query.trim());
         }, 100);
         return;
       }
 
       router.push(`/conversation/${targetConversationId}`);
     },
-    [onOpenChange, router, isConversationScope],
+    [onOpenChange, router, isConversationScope, highlightText, query],
   );
 
   const handleKeyDown = useCallback(
