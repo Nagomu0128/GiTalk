@@ -26,10 +26,10 @@ export const useConversationApi = (conversationId: string) => {
       fetch(`${API}/v1/conversations/${conversationId}/branches`, { headers }),
       fetch(`${API}/v1/conversations/${conversationId}/nodes`, { headers }),
     ]);
-    const branchesData = await branchesRes.json();
-    const nodesData = await nodesRes.json();
-    setBranches(branchesData.data);
-    setNodes(nodesData.nodes);
+    const branchesData = branchesRes.ok ? await branchesRes.json() : {};
+    const nodesData = nodesRes.ok ? await nodesRes.json() : {};
+    setBranches(branchesData.data ?? []);
+    setNodes(nodesData.nodes ?? []);
   }, [conversationId, getHeaders, setBranches, setNodes]);
 
   useEffect(() => {
@@ -46,11 +46,11 @@ export const useConversationApi = (conversationId: string) => {
         return;
       }
       const convData = await convRes.json();
-      const branchesData = await branchesRes.json();
-      const nodesData = await nodesRes.json();
+      const branchesData = branchesRes.ok ? await branchesRes.json() : {};
+      const nodesData = nodesRes.ok ? await nodesRes.json() : {};
       setConversation({ id: convData.id, title: convData.title, activeBranchId: convData.activeBranchId, contextMode: convData.contextMode });
-      setBranches(branchesData.data);
-      setNodes(nodesData.nodes);
+      setBranches(branchesData.data ?? []);
+      setNodes(nodesData.nodes ?? []);
     };
     fetchData();
   }, [conversationId, getHeaders, router, setBranches, setConversation, setNodes]);
