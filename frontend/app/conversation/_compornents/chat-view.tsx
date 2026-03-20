@@ -51,13 +51,11 @@ export function ChatView({ onSend }: ChatViewProps) {
 
   return (
     <div className="flex h-full flex-col">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
+      <div ref={scrollRef} className={`flex-1 overflow-y-auto px-4 py-4 ${isEmpty && !isStreaming ? 'flex items-center justify-center' : ''}`}>
+        {isEmpty && !isStreaming ? (
+          <p className="text-neutral-500">メッセージを送信して会話を始めましょう</p>
+        ) : (
         <div className="mx-auto max-w-3xl">
-        {isEmpty && !isStreaming && (
-          <div className="flex h-full items-center justify-center text-neutral-500">
-            <p>メッセージを送信して会話を始めましょう</p>
-          </div>
-        )}
 
         {branchNodes.map((node) => (
           <div key={node.id}>
@@ -101,6 +99,7 @@ export function ChatView({ onSend }: ChatViewProps) {
           </>
         )}
         </div>
+        )}
       </div>
 
       <MessageInput onSend={onSend} disabled={isStreaming} />
