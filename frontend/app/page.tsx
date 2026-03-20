@@ -28,7 +28,7 @@ export default function LandingPage() {
       {/* ヘッダー */}
       <header className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
-          <Image src="/logo-light.png" alt="GiTalk" width={28} height={28} />
+          <Image src="/light_mode_logo.png" alt="GiTalk" width={28} height={28} />
           <span className="text-xl font-bold text-gray-900">GiTalk</span>
         </div>
         <div className="flex items-center gap-3">
@@ -47,7 +47,7 @@ export default function LandingPage() {
       {/* ヒーロー */}
       <section className="flex flex-col items-center px-6 py-24 text-center">
         <div className="mb-6">
-          <Image src="/logo-light.png" alt="GiTalk" width={120} height={120} />
+          <Image src="/light_mode_logo.png" alt="GiTalk" width={120} height={120} />
         </div>
         <h1 className="mb-4 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
           AIとの会話を、もっと構造的に。

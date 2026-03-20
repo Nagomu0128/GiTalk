@@ -1,4 +1,5 @@
 import { PenLine, Search, LayoutDashboard, ChevronLeft, FolderGit2 } from 'lucide-react';
+import Image from 'next/image';
 
 export const Sidebar = ({
   collapsed,
@@ -20,15 +21,21 @@ export const Sidebar = ({
       collapsed ? 'w-12' : 'w-64'
     }`}
   >
-    <button
-      onClick={onToggle}
-      className="flex h-10 items-center justify-end px-3 text-neutral-400 transition-colors hover:text-neutral-200"
-    >
-      <ChevronLeft
-        size={18}
-        className={`transition-transform ${collapsed ? 'rotate-180' : ''}`}
-      />
-    </button>
+    <div className="flex h-10 items-center justify-between px-3">
+      <div className="flex items-center gap-2">
+        <Image src="/dark_mode_logo.png" alt="GiTalk" width={20} height={20} className="shrink-0" />
+        {!collapsed && <span className="text-sm font-bold text-neutral-200">GiTalk</span>}
+      </div>
+      <button
+        onClick={onToggle}
+        className="text-neutral-400 transition-colors hover:text-neutral-200"
+      >
+        <ChevronLeft
+          size={18}
+          className={`transition-transform ${collapsed ? 'rotate-180' : ''}`}
+        />
+      </button>
+    </div>
 
     <nav className="flex flex-col gap-1 px-2">
       <button

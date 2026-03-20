@@ -2,6 +2,7 @@
 
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { getFirebaseAuth } from '@/lib/firebase';
 
 const googleProvider = new GoogleAuthProvider();
@@ -22,6 +23,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-lg">
         <div className="mb-8 text-center">
+          <Image src="/light_mode_logo.png" alt="GiTalk" width={64} height={64} className="mx-auto mb-3" />
           <h1 className="mb-2 text-3xl font-bold text-gray-900">GiTalk</h1>
           <p className="text-sm text-gray-500">
             AIとの会話を、
