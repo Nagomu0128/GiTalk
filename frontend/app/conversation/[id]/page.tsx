@@ -102,7 +102,7 @@ export default function ConversationPage() {
           onBack={() => router.push(`/tree/${conversationId}`)}
           onSearch={() => setConvSearchOpen(true)}
           onPush={dialogs.openPushDialog}
-          onMore={dialogs.openDeleteDialog}
+          onDelete={dialogs.openDeleteDialog}
           branchSelector={
             nodes.length > 0 ? (
               <BranchSelector
