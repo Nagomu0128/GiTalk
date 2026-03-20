@@ -25,8 +25,9 @@ export default function DashboardPage() {
   const [saveTarget, setSaveTarget] = useState<ConversationSummary | null>(null);
 
   useEffect(() => {
+    if (!user) return;
     const fetchConversations = async () => {
-      const token = await user?.getIdToken();
+      const token = await user.getIdToken();
       const res = await fetch(`${API}/v1/conversations?limit=6`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -39,7 +40,7 @@ export default function DashboardPage() {
       setLoading(false);
     };
     fetchConversations();
-  }, [user]);
+  }, [user?.uid]);
 
   const handleLoadMore = async () => {
     if (!cursor) return;
@@ -50,7 +51,11 @@ export default function DashboardPage() {
     });
     if (res.ok) {
       const data = await res.json();
-      setConversations((prev) => [...prev, ...data.data]);
+      setConversations((prev) => {
+        const existingIds = new Set(prev.map((c) => c.id));
+        const newItems = (data.data as ReadonlyArray<ConversationSummary>).filter((c) => !existingIds.has(c.id));
+        return [...prev, ...newItems];
+      });
       setHasMore(data.has_more);
       setCursor(data.next_cursor);
     }
