@@ -26,7 +26,7 @@ export default function LandingPage() {
       {/* ヘッダー */}
       <header className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
-          <Image src="/light_mode_logo.png" alt="GiTalk" width={40} height={40} />
+          <Image src="/light_mode_logo_with_circle.png" alt="GiTalk" width={48} height={48} />
           <span className="text-2xl font-bold text-gray-900">GiTalk</span>
         </div>
         <div className="flex items-center gap-3">
