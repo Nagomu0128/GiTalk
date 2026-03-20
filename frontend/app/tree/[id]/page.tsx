@@ -425,7 +425,6 @@ export default function TreePage() {
     } catch (err) { console.error(err); }
   }, [user, router]);
 
-  const handleSearch = useCallback(() => { console.log('Search'); }, []);
   const handleDashboard = useCallback(() => { router.push('/dashboard'); }, [router]);
   const handleBack = useCallback(() => { router.push(`/conversation/${conversationId}`); }, [router, conversationId]);
   const handleHelp = useCallback(() => { console.log('Help'); }, []);
@@ -449,7 +448,6 @@ export default function TreePage() {
         <Header
           title={conversation?.title ?? ''}
           onBack={handleBack}
-          onSearch={handleSearch}
           onHelp={handleHelp}
         />
 
