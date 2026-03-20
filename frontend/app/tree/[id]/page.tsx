@@ -21,7 +21,6 @@ import {
 } from '../_components/data-utils';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { Header } from '../_components/header';
-import { ChatInput } from '../_components/chat-input';
 import { ChatPanel } from '../_components/chat-panel';
 import { NodeContextMenuPopover } from '../_components/context-menu';
 import { BranchPopover } from '../_components/branch-menu';
@@ -53,7 +52,6 @@ export default function TreePage() {
   const user = useAuthStore((s) => s.user);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [chatInput, setChatInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -433,11 +431,6 @@ export default function TreePage() {
   const handleBack = useCallback(() => { router.push(`/conversation/${conversationId}`); }, [router, conversationId]);
   const handleHelp = useCallback(() => { console.log('Help'); }, []);
 
-  const handleChatSubmit = useCallback(() => {
-    if (!chatInput.trim()) return;
-    console.log('Submit:', chatInput);
-    setChatInput('');
-  }, [chatInput]);
 
   if (loading) return <LoadingView />;
   if (error) return <ErrorView message={error} onBack={() => router.push('/dashboard')} />;
@@ -497,11 +490,7 @@ export default function TreePage() {
           />
         </div>
 
-        <ChatInput
-          value={chatInput}
-          onChange={setChatInput}
-          onSubmit={handleChatSubmit}
-        />
+
       </div>
 
       {chatPanelNodeId && (
