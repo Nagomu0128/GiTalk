@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { MoreVertical, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { ConversationCard } from '@/components/cards/conversation-card';
 import { SaveToRepoDialog } from '@/components/dialogs/save-to-repo-dialog';
@@ -99,12 +99,6 @@ export default function DashboardPage() {
           <Image src="/dark_mode_logo.png" alt="GiTalk" width={44} height={44} />
           <h1 className="text-lg font-bold text-neutral-200">会話一覧</h1>
         </div>
-        <button
-          onClick={handleNewConversation}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
-        >
-          <MoreVertical size={16} />
-        </button>
       </header>
 
       {/* Content */}
