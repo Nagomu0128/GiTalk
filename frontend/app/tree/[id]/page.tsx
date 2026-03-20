@@ -28,6 +28,7 @@ import { BranchPopover } from '../_components/branch-menu';
 import { NewBranchDialog } from '../_components/new-branch-dialog';
 import { CherryPickConfirmDialog } from '../_components/cherry-pick-dialog';
 import { TreeFlowInner } from '../_components/tree-flow';
+import { DiffView } from '@/app/conversation/_compornents/diff-view';
 
 const LoadingView = () => (
   <div className="flex h-screen w-full items-center justify-center bg-neutral-900">
@@ -91,6 +92,7 @@ export default function TreePage() {
   const [mergeState, setMergeState] = useState<MergeState>({
     status: 'idle', targetBranchIndex: null, sourceBranchIndex: null,
   });
+  const [diffView, setDiffView] = useState<{ visible: boolean; branchId: string }>({ visible: false, branchId: '' });
 
   useEffect(() => {
     if (selectedNodeId) {
@@ -327,6 +329,11 @@ export default function TreePage() {
       const branch = rawBranches[branchIndex];
       if (!branch) return;
 
+      if (action === 'diff') {
+        setDiffView({ visible: true, branchId: branch.id });
+        return;
+      }
+
       if (action === 'merge to') {
         setMergeState({ status: 'selecting-source', targetBranchIndex: branchIndex, sourceBranchIndex: null });
         return;
@@ -494,6 +501,15 @@ export default function TreePage() {
         onConfirm={handleCherryPickConfirm}
         onCancel={() => setCherryPickConfirm({ visible: false, nodeId: '' })}
       />
+
+      {diffView.visible && (
+        <DiffView
+          conversationId={conversationId}
+          branches={rawBranches}
+          initialBranchId={diffView.branchId}
+          onClose={() => setDiffView({ visible: false, branchId: '' })}
+        />
+      )}
     </div>
   );
 }

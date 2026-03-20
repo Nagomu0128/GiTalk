@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { GitBranch } from 'lucide-react';
+import { GitBranch, GitCompareArrows, Merge } from 'lucide-react';
 import { useConversationStore } from '@/stores/conversation-store';
 
 type BranchSelectorProps = {
@@ -13,18 +12,6 @@ type BranchSelectorProps = {
 export function BranchSelector({ onSwitch, onMerge, onDiff }: BranchSelectorProps) {
   const branches = useConversationStore((s) => s.branches);
   const activeBranchId = useConversationStore((s) => s.activeBranchId);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as HTMLElement)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   return (
     <div className="flex items-center gap-2">
@@ -41,32 +28,23 @@ export function BranchSelector({ onSwitch, onMerge, onDiff }: BranchSelectorProp
         ))}
       </select>
 
-      <div className="relative" ref={menuRef}>
-        <button
-          onClick={() => setMenuOpen((prev) => !prev)}
-          className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-600 text-xs text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
-        >
-          ···
-        </button>
-        {menuOpen && (
-          <div className="absolute right-0 top-full z-10 mt-1 w-52 rounded-xl border border-neutral-600 bg-neutral-800 py-1 shadow-lg">
-            <button
-              onClick={() => { onDiff(); setMenuOpen(false); }}
-              className="w-full px-3 py-2 text-left text-sm text-neutral-300 transition-colors hover:bg-neutral-700"
-            >
-              ブランチを比較
-              <span className="block text-xs text-neutral-500">二つの話題の違いを確認します</span>
-            </button>
-            <button
-              onClick={() => { onMerge(); setMenuOpen(false); }}
-              className="w-full px-3 py-2 text-left text-sm text-neutral-300 transition-colors hover:bg-neutral-700"
-            >
-              会話を統合
-              <span className="block text-xs text-neutral-500">別の話題の結論をこちらに取り込みます</span>
-            </button>
-          </div>
-        )}
-      </div>
+      <button
+        onClick={onDiff}
+        className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-600 px-2.5 text-xs text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+        title="ブランチを比較"
+      >
+        <GitCompareArrows size={14} />
+        <span>比較</span>
+      </button>
+
+      <button
+        onClick={onMerge}
+        className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-600 px-2.5 text-xs text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+        title="会話を統合"
+      >
+        <Merge size={14} />
+        <span>統合</span>
+      </button>
     </div>
   );
 }

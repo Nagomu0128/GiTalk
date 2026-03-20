@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useConversationStore, type ConversationNode } from '@/stores/conversation-store';
+import { useConversationStore, type Branch, type ConversationNode } from '@/stores/conversation-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { DiffHeader } from './diff-header';
 import { DiffBranchPanel } from './diff-branch-panel';
@@ -17,13 +17,16 @@ type DiffData = {
 type DiffViewProps = {
   readonly conversationId: string;
   readonly onClose: () => void;
+  readonly branches?: ReadonlyArray<Branch>;
+  readonly initialBranchId?: string;
 };
 
-export function DiffView({ conversationId, onClose }: DiffViewProps) {
-  const branches = useConversationStore((s) => s.branches);
-  const activeBranchId = useConversationStore((s) => s.activeBranchId);
+export function DiffView({ conversationId, onClose, branches: branchesProp, initialBranchId }: DiffViewProps) {
+  const storeBranches = useConversationStore((s) => s.branches);
+  const storeActiveBranchId = useConversationStore((s) => s.activeBranchId);
+  const branches = branchesProp ?? storeBranches;
   const user = useAuthStore((s) => s.user);
-  const [branchAId, setBranchAId] = useState(activeBranchId ?? '');
+  const [branchAId, setBranchAId] = useState(initialBranchId ?? storeActiveBranchId ?? '');
   const [branchBId, setBranchBId] = useState('');
   const [diffData, setDiffData] = useState<DiffData | null>(null);
   const [loading, setLoading] = useState(false);
