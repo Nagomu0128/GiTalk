@@ -35,7 +35,7 @@ export function ConversationCard({ id, title, updatedAt, description, onDelete, 
     <>
       <div className="relative rounded-xl bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
         <button
-          onClick={() => router.push(`/tree/${id}`)}
+          onClick={() => router.push(`/conversation/${id}`)}
           className="w-full text-left"
         >
           <h3 className="mb-1 truncate pr-6 text-sm font-bold text-neutral-900">{title}</h3>
