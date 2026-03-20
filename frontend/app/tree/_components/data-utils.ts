@@ -118,6 +118,15 @@ export const buildAllEdges = (
         if (leafNode) {
           // Create a virtual merge dot ID
           const mergeDotId = `merge-dot-${leafNode.id}-${node.id}`;
+          // Edge from leaf node to merge dot
+          branchSegments.push({
+            id: `seg-leaf-${leafNode.id}-${mergeDotId}`,
+            fromNodeId: leafNode.id,
+            toNodeId: mergeDotId,
+            edgeType: 'segment',
+            defaultColor: branches[sourceBranchIdx]?.color ?? '#888',
+          });
+          // Dashed arrow from merge dot to summary node
           mergeArrows.push({
             id: `merge-arrow-${leafNode.id}-${node.id}`,
             fromNodeId: mergeDotId,
