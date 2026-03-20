@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useConversationStore, type ConversationNode } from '@/stores/conversation-store';
 import { useAuthStore } from '@/stores/auth-store';
-import { MessageBubble } from '../chat/message-bubble';
+import { MessageBubble } from '@/components/chat/message-bubble';
 
 const API = '/api';
 
