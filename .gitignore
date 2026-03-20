@@ -8,6 +8,7 @@ terraform.tfvars
 
 # Build output
 dist/
+.next/
 
 # Secrets
 .env

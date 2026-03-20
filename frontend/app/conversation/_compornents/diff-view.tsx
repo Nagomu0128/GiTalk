@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useConversationStore, type ConversationNode } from '@/stores/conversation-store';
+import { useState, useCallback } from 'react';
+import { useConversationStore, type Branch, type ConversationNode } from '@/stores/conversation-store';
 import { useAuthStore } from '@/stores/auth-store';
-import { MessageBubble } from '@/components/chat/message-bubble';
+import { DiffHeader } from './diff-header';
+import { DiffBranchPanel } from './diff-branch-panel';
 
 const API = '/api';
 
@@ -16,18 +17,21 @@ type DiffData = {
 type DiffViewProps = {
   readonly conversationId: string;
   readonly onClose: () => void;
+  readonly branches?: ReadonlyArray<Branch>;
+  readonly initialBranchId?: string;
 };
 
-export function DiffView({ conversationId, onClose }: DiffViewProps) {
-  const branches = useConversationStore((s) => s.branches);
-  const activeBranchId = useConversationStore((s) => s.activeBranchId);
+export function DiffView({ conversationId, onClose, branches: branchesProp, initialBranchId }: DiffViewProps) {
+  const storeBranches = useConversationStore((s) => s.branches);
+  const storeActiveBranchId = useConversationStore((s) => s.activeBranchId);
+  const branches = branchesProp ?? storeBranches;
   const user = useAuthStore((s) => s.user);
-  const [branchAId, setBranchAId] = useState(activeBranchId ?? '');
+  const [branchAId, setBranchAId] = useState(initialBranchId ?? storeActiveBranchId ?? '');
   const [branchBId, setBranchBId] = useState('');
   const [diffData, setDiffData] = useState<DiffData | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchDiff = async () => {
+  const fetchDiff = useCallback(async () => {
     if (!branchAId || !branchBId) return;
     setLoading(true);
     const token = await user?.getIdToken();
@@ -38,71 +42,30 @@ export function DiffView({ conversationId, onClose }: DiffViewProps) {
     const data = await res.json();
     setDiffData(data);
     setLoading(false);
-  };
+  }, [branchAId, branchBId, conversationId, user]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white">
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <h2 className="text-lg font-bold">ブランチ比較</h2>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕ 閉じる</button>
-      </div>
+    <div className="fixed inset-0 z-50 flex flex-col bg-neutral-900">
+      <DiffHeader
+        branches={branches}
+        branchAId={branchAId}
+        branchBId={branchBId}
+        loading={loading}
+        onBranchAChange={setBranchAId}
+        onBranchBChange={setBranchBId}
+        onCompare={fetchDiff}
+        onClose={onClose}
+      />
 
-      <div className="flex items-center gap-4 border-b px-4 py-2">
-        <select
-          value={branchAId}
-          onChange={(e) => setBranchAId(e.target.value)}
-          className="rounded border px-2 py-1 text-sm"
-        >
-          {branches.map((b) => (
-            <option key={b.id} value={b.id}>🌿 {b.name}</option>
-          ))}
-        </select>
-        <span className="text-gray-400">↔</span>
-        <select
-          value={branchBId}
-          onChange={(e) => setBranchBId(e.target.value)}
-          className="rounded border px-2 py-1 text-sm"
-        >
-          <option value="">ブランチを選択...</option>
-          {branches.filter((b) => b.id !== branchAId).map((b) => (
-            <option key={b.id} value={b.id}>🌿 {b.name}</option>
-          ))}
-        </select>
-        <button
-          onClick={fetchDiff}
-          disabled={!branchBId || loading}
-          className="rounded-lg bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? '比較中...' : '比較する'}
-        </button>
-      </div>
-
-      {diffData && (
+      {diffData ? (
         <div className="flex flex-1 overflow-hidden">
-          <div className="flex-1 overflow-y-auto border-r p-4">
-            <h3 className="mb-3 text-sm font-bold text-gray-600">🌿 {diffData.branch_a.name}</h3>
-            {diffData.branch_a.nodes.length === 0 && (
-              <p className="text-sm text-gray-400">分岐後のノードはありません</p>
-            )}
-            {diffData.branch_a.nodes.map((node: ConversationNode) => (
-              <div key={node.id}>
-                <MessageBubble role="user" content={node.userMessage} />
-                <MessageBubble role="ai" content={node.aiResponse} model={node.model} />
-              </div>
-            ))}
-          </div>
-          <div className="flex-1 overflow-y-auto p-4">
-            <h3 className="mb-3 text-sm font-bold text-gray-600">🌿 {diffData.branch_b.name}</h3>
-            {diffData.branch_b.nodes.length === 0 && (
-              <p className="text-sm text-gray-400">分岐後のノードはありません</p>
-            )}
-            {diffData.branch_b.nodes.map((node: ConversationNode) => (
-              <div key={node.id}>
-                <MessageBubble role="user" content={node.userMessage} />
-                <MessageBubble role="ai" content={node.aiResponse} model={node.model} />
-              </div>
-            ))}
-          </div>
+          <DiffBranchPanel branchName={diffData.branch_a.name} nodes={diffData.branch_a.nodes} />
+          <div className="w-px shrink-0 bg-neutral-700" />
+          <DiffBranchPanel branchName={diffData.branch_b.name} nodes={diffData.branch_b.nodes} />
+        </div>
+      ) : (
+        <div className="flex flex-1 items-center justify-center">
+          <p className="text-sm text-neutral-500">ブランチを選択して比較してください</p>
         </div>
       )}
     </div>
