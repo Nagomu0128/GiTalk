@@ -19,7 +19,7 @@ import {
   buildReactFlowNodes,
   buildReactFlowEdges,
 } from '../_components/data-utils';
-import { Sidebar } from '../_components/sidebar';
+import { AppSidebar } from '@/components/layout/app-sidebar';
 import { Header } from '../_components/header';
 import { ChatInput } from '../_components/chat-input';
 import { ChatPanel } from '../_components/chat-panel';
@@ -413,13 +413,14 @@ export default function TreePage() {
 
   return (
     <div className="flex h-screen w-full bg-neutral-900">
-      <Sidebar
+      <AppSidebar
         collapsed={sidebarCollapsed}
         onToggle={handleToggleSidebar}
         onNewChat={handleNewChat}
         onSearch={handleSearch}
         onDashboard={handleDashboard}
         onRepositories={() => router.push('/dashboard/repositories')}
+        user={user ? { displayName: user.displayName, email: user.email, photoURL: user.photoURL } : null}
       />
 
       <div className="flex flex-1 flex-col">
