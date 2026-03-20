@@ -2,6 +2,13 @@
 
 import { useState } from 'react';
 import { useConversationStore } from '@/stores/conversation-store';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type MergeDialogProps = {
   readonly onMerge: (sourceBranchId: string, targetBranchId: string, strategy: string) => void;
@@ -39,16 +46,21 @@ export function MergeDialog({ onMerge, onClose, isLoading = false }: MergeDialog
 
         <div className="mb-4">
           <label className="mb-1.5 block text-sm font-medium text-neutral-400">マージ元</label>
-          <select
-            value={sourceBranchId}
-            onChange={(e) => setSourceBranchId(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 dark:border-neutral-700 dark:bg-neutral-800 py-2 text-sm text-neutral-200 outline-none transition-colors focus:border-neutral-500"
-          >
-            <option value="">ブランチを選択...</option>
-            {otherBranches.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
+          <Select value={sourceBranchId} onValueChange={(val) => setSourceBranchId(val ?? '')}>
+            <SelectTrigger className="w-full text-sm text-neutral-200">
+              <SelectValue placeholder="ブランチを選択...">
+                {(value: string | null) => {
+                  const branch = otherBranches.find((b) => b.id === value);
+                  return branch ? branch.name : 'ブランチを選択...';
+                }}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {otherBranches.map((b) => (
+                <SelectItem key={b.id} value={b.id} label={b.name}>{b.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="mb-5">
