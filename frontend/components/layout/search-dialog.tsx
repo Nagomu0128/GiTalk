@@ -95,11 +95,24 @@ export const SearchDialog = ({
   }, [query, user, isConversationScope, conversationId]);
 
   const handleNavigate = useCallback(
-    (conversationId: string) => {
+    (targetConversationId: string, nodeId?: string) => {
       onOpenChange(false);
-      router.push(`/conversation/${conversationId}`);
+
+      if (isConversationScope && nodeId) {
+        // 会話内検索: 該当ノードまでスクロール+ハイライト
+        setTimeout(() => {
+          const el = document.getElementById(`node-${nodeId}`);
+          if (!el) return;
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-2', 'ring-blue-500/60', 'rounded-lg');
+          setTimeout(() => el.classList.remove('ring-2', 'ring-blue-500/60', 'rounded-lg'), 2000);
+        }, 100);
+        return;
+      }
+
+      router.push(`/conversation/${targetConversationId}`);
     },
-    [onOpenChange, router],
+    [onOpenChange, router, isConversationScope],
   );
 
   const handleKeyDown = useCallback(
@@ -188,7 +201,7 @@ export const SearchDialog = ({
                       {results.nodes.map((node) => (
                         <button
                           key={node.id}
-                          onClick={() => handleNavigate(node.conversation_id)}
+                          onClick={() => handleNavigate(node.conversation_id, node.id)}
                           className="block w-full min-w-0 overflow-hidden rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-neutral-600"
                         >
                           <div className="flex min-w-0 items-center gap-1.5 text-xs text-neutral-200">
