@@ -40,7 +40,7 @@ const ErrorView = ({ message, onBack }: { readonly message: string; readonly onB
   <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-neutral-900">
     <div className="text-neutral-400">{message}</div>
     <Button variant="outline" onClick={onBack}>
-      ダッシュボードに戻る
+      会話一覧に戻る
     </Button>
   </div>
 );
