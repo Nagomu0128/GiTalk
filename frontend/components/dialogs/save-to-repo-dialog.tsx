@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/auth-store';
 
 const API = '/api';
@@ -80,7 +81,7 @@ export function SaveToRepoDialog({ conversationId, conversationTitle, onClose }:
         method: 'POST', headers,
         body: JSON.stringify({ title: newRepoTitle, description: newRepoDescription || null, visibility }),
       });
-      if (!createRes.ok) { alert('リポジトリ作成に失敗しました'); setLoading(false); return; }
+      if (!createRes.ok) { toast.error('リポジトリ作成に失敗しました'); setLoading(false); return; }
       const newRepo = await createRes.json();
       repoId = newRepo.id;
     }
@@ -91,8 +92,8 @@ export function SaveToRepoDialog({ conversationId, conversationTitle, onClose }:
     });
 
     setLoading(false);
-    if (pushRes.ok) { alert('保存しました！'); onClose(); }
-    else { const err = await pushRes.json(); alert(err.error?.message ?? '保存に失敗しました'); }
+    if (pushRes.ok) { toast.success('保存しました！'); onClose(); }
+    else { const err = await pushRes.json(); toast.error(err.error?.message ?? '保存に失敗しました'); }
   };
 
   return (
