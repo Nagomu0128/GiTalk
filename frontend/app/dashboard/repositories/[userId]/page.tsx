@@ -9,6 +9,7 @@ import { RepositoryCard } from '../_components/repository-card';
 import { RepositoryFilterBar } from '../_components/repository-filter-bar';
 import { DeleteConfirmDialog } from '../_components/delete-confirm-dialog';
 import { UserSearchBar } from '../_components/user-search-bar';
+import { FollowListDialog } from '../_components/follow-list-dialog';
 
 type VisibilityFilter = 'all' | 'private' | 'public';
 type SortKey = 'updatedAt' | 'title';
@@ -114,6 +115,7 @@ export default function UserRepositoriesPage() {
   };
 
   const [followLoading, setFollowLoading] = useState(false);
+  const [followList, setFollowList] = useState<{ open: boolean; mode: 'followers' | 'following' }>({ open: false, mode: 'followers' });
 
   const handleToggleFollow = useCallback(async () => {
     if (!targetUser || !user) return;
@@ -182,14 +184,20 @@ export default function UserRepositoriesPage() {
           {/* Follow counts */}
           {targetUser && (
             <div className="mt-3 flex items-center gap-4 text-sm">
-              <span className="text-neutral-700 dark:text-neutral-300">
+              <button
+                onClick={() => setFollowList({ open: true, mode: 'followers' })}
+                className="text-neutral-700 transition-colors hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
+              >
                 <span className="font-semibold">{targetUser.followersCount}</span>
                 <span className="ml-1 text-neutral-500">followers</span>
-              </span>
-              <span className="text-neutral-700 dark:text-neutral-300">
+              </button>
+              <button
+                onClick={() => setFollowList({ open: true, mode: 'following' })}
+                className="text-neutral-700 transition-colors hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
+              >
                 <span className="font-semibold">{targetUser.followingCount}</span>
                 <span className="ml-1 text-neutral-500">following</span>
-              </span>
+              </button>
             </div>
           )}
 
@@ -254,6 +262,15 @@ export default function UserRepositoriesPage() {
           title={deleteTarget.title}
           onCancel={() => setDeleteTarget(null)}
           onConfirm={() => handleDelete(deleteTarget)}
+        />
+      )}
+
+      {targetUser && (
+        <FollowListDialog
+          open={followList.open}
+          onOpenChange={(open) => setFollowList((prev) => ({ ...prev, open }))}
+          userId={targetUser.id}
+          mode={followList.mode}
         />
       )}
     </div>
