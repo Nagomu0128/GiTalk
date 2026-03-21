@@ -1,7 +1,7 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { ResultAsync } from 'neverthrow';
 import { db } from '../db/client.js';
-import { follows } from '../db/schema.js';
+import { follows, users } from '../db/schema.js';
 import { errorBuilder, type InferError } from '../shared/error.js';
 
 export const DBFollowError = errorBuilder('DBFollowError');
@@ -62,5 +62,37 @@ export const getFollowCounts = (
         .where(eq(follows.followerId, userId))
         .then((rows) => rows[0]?.count ?? 0),
     ]).then(([followersCount, followingCount]) => ({ followersCount, followingCount })),
+    DBFollowError.handle,
+  );
+
+type FollowUser = {
+  readonly id: string;
+  readonly displayName: string;
+  readonly avatarUrl: string | null;
+};
+
+export const listFollowers = (
+  userId: string,
+): ResultAsync<ReadonlyArray<FollowUser>, DBFollowError> =>
+  ResultAsync.fromPromise(
+    db
+      .select({ id: users.id, displayName: users.displayName, avatarUrl: users.avatarUrl })
+      .from(follows)
+      .innerJoin(users, eq(follows.followerId, users.id))
+      .where(eq(follows.followingId, userId))
+      .then((rows) => rows),
+    DBFollowError.handle,
+  );
+
+export const listFollowing = (
+  userId: string,
+): ResultAsync<ReadonlyArray<FollowUser>, DBFollowError> =>
+  ResultAsync.fromPromise(
+    db
+      .select({ id: users.id, displayName: users.displayName, avatarUrl: users.avatarUrl })
+      .from(follows)
+      .innerJoin(users, eq(follows.followingId, users.id))
+      .where(eq(follows.followerId, userId))
+      .then((rows) => rows),
     DBFollowError.handle,
   );

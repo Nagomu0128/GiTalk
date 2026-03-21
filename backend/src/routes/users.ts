@@ -3,7 +3,7 @@ import { getAuthUser, getOptionalAuthUser } from '../middleware/auth.js';
 import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth.js';
 import { findUserById, searchUsersByName } from '../infra/user.js';
 import { listRepositoriesByOwner, listPublicRepositoriesByOwner } from '../infra/repository.js';
-import { createFollow, deleteFollow, isFollowing, getFollowCounts } from '../infra/follow.js';
+import { createFollow, deleteFollow, isFollowing, getFollowCounts, listFollowers, listFollowing } from '../infra/follow.js';
 import { appLogger } from '../shared/logger.js';
 
 const logger = appLogger('usersRoute');
@@ -78,6 +78,36 @@ usersRouter.delete('/:userId/follow', authMiddleware, async (c) => {
     (error) => {
       logger.error(error.message);
       return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to unfollow user' } }, 500);
+    },
+  );
+});
+
+// GET /v1/users/:userId/followers (optional auth)
+usersRouter.get('/:userId/followers', optionalAuthMiddleware, async (c) => {
+  const userId = c.req.param('userId');
+  if (!userId) return c.json({ error: { code: 'BAD_REQUEST', message: 'Missing userId' } }, 400);
+
+  const result = await listFollowers(userId);
+  return result.match(
+    (users) => c.json({ data: users }),
+    (error) => {
+      logger.error(error.message);
+      return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to list followers' } }, 500);
+    },
+  );
+});
+
+// GET /v1/users/:userId/following (optional auth)
+usersRouter.get('/:userId/following', optionalAuthMiddleware, async (c) => {
+  const userId = c.req.param('userId');
+  if (!userId) return c.json({ error: { code: 'BAD_REQUEST', message: 'Missing userId' } }, 400);
+
+  const result = await listFollowing(userId);
+  return result.match(
+    (users) => c.json({ data: users }),
+    (error) => {
+      logger.error(error.message);
+      return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to list following' } }, 500);
     },
   );
 });
