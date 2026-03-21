@@ -59,7 +59,7 @@ export function ConversationCard({ id, title, updatedAt, description, onDelete, 
                   onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onSave(id); }}
                   className="w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
                 >
-                  リポジトリに保存
+                  Push
                 </button>
               )}
               <button

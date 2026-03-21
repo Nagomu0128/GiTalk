@@ -455,9 +455,9 @@ export default function TreePage() {
 
         {mergeState.status !== 'idle' && (
           <div className="flex h-8 shrink-0 items-center justify-center text-sm text-amber-400">
-            {mergeState.status === 'selecting-source' && 'mergeを選択してください'}
-            {mergeState.status === 'merging' && 'merge中・・・'}
-            {mergeState.status === 'done' && 'merge完了！'}
+            {mergeState.status === 'selecting-source' && 'Select source branch to merge'}
+            {mergeState.status === 'merging' && 'Merging...'}
+            {mergeState.status === 'done' && 'Merge complete!'}
           </div>
         )}
 
