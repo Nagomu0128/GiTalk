@@ -31,6 +31,7 @@ import { RenameBranchDialog } from '../_components/rename-branch-dialog';
 import { CherryPickConfirmDialog } from '../_components/cherry-pick-dialog';
 import { TreeFlowInner } from '../_components/tree-flow';
 import { DiffView } from '@/app/conversation/_compornents/diff-view';
+import { MergeDialog } from '@/app/conversation/_compornents/merge-dialog';
 
 const LoadingView = () => (
   <div className="flex h-screen w-full items-center justify-center bg-neutral-100 dark:bg-neutral-900">
@@ -95,6 +96,8 @@ export default function TreePage() {
   const [mergeState, setMergeState] = useState<MergeState>({
     status: 'idle', targetBranchIndex: null, sourceBranchIndex: null,
   });
+  const [mergeDialog, setMergeDialog] = useState<{ visible: boolean; targetBranchId: string }>({ visible: false, targetBranchId: '' });
+  const [mergeLoading, setMergeLoading] = useState(false);
   const [diffView, setDiffView] = useState<{ visible: boolean; branchId: string }>({ visible: false, branchId: '' });
 
   useEffect(() => {
@@ -361,50 +364,31 @@ export default function TreePage() {
       }
 
       if (action === 'merge') {
-        // Step 1: select target branch (merge into this branch)
-        if (mergeState.status === 'idle') {
-          setMergeState({ status: 'selecting-source', targetBranchIndex: branchIndex, sourceBranchIndex: null });
-          return;
-        }
-        // Step 2: select source branch and execute merge
-        if (mergeState.status === 'selecting-source' && mergeState.targetBranchIndex !== null) {
-          const targetBranch = rawBranches[mergeState.targetBranchIndex];
-          if (!targetBranch || branchIndex === mergeState.targetBranchIndex) return;
-
-          setMergeState((prev) => ({ ...prev, status: 'merging', sourceBranchIndex: branchIndex }));
-
-          try {
-            const headers = await getHeaders();
-            const res = await fetch(`${API}/v1/conversations/${conversationId}/merge`, {
-              method: 'POST', headers,
-              body: JSON.stringify({
-                source_branch_id: branch.id,
-                target_branch_id: targetBranch.id,
-                summary_strategy: 'detailed',
-              }),
-            });
-
-            if (res.ok) {
-              setMergeState({ status: 'done', targetBranchIndex: null, sourceBranchIndex: null });
-              await refetchData();
-              setTimeout(() => {
-                setMergeState({ status: 'idle', targetBranchIndex: null, sourceBranchIndex: null });
-              }, 2000);
-            } else {
-              const err = await res.json();
-              console.error('Merge failed:', err);
-              setMergeState({ status: 'idle', targetBranchIndex: null, sourceBranchIndex: null });
-            }
-          } catch (err) {
-            console.error('Merge failed:', err);
-            setMergeState({ status: 'idle', targetBranchIndex: null, sourceBranchIndex: null });
-          }
-          return;
-        }
+        setMergeDialog({ visible: true, targetBranchId: branch.id });
+        return;
       }
     },
-    [rawBranches, mergeState, getHeaders, conversationId, refetchData],
+    [rawBranches, getHeaders, conversationId, refetchData],
   );
+
+  const handleTreeMerge = useCallback(async (sourceBranchId: string, targetBranchId: string, strategy: string) => {
+    setMergeLoading(true);
+    try {
+      const headers = await getHeaders();
+      const res = await fetch(`${API}/v1/conversations/${conversationId}/merge`, {
+        method: 'POST', headers,
+        body: JSON.stringify({ source_branch_id: sourceBranchId, target_branch_id: targetBranchId, summary_strategy: strategy }),
+      });
+      if (res.ok) {
+        setMergeDialog({ visible: false, targetBranchId: '' });
+        await refetchData();
+      } else {
+        const err = await res.json();
+        console.error('Merge failed:', err);
+      }
+    } catch (err) { console.error('Merge failed:', err); }
+    finally { setMergeLoading(false); }
+  }, [getHeaders, conversationId, refetchData]);
 
   const handleCloseBranchMenu = useCallback(() => {
     setBranchMenu((prev) => ({ ...prev, visible: false }));
@@ -452,14 +436,6 @@ export default function TreePage() {
           onBack={handleBack}
           onHelp={handleHelp}
         />
-
-        {mergeState.status !== 'idle' && (
-          <div className="flex h-8 shrink-0 items-center justify-center text-sm text-amber-400">
-            {mergeState.status === 'selecting-source' && 'Select source branch to merge'}
-            {mergeState.status === 'merging' && 'Merging...'}
-            {mergeState.status === 'done' && 'Merge complete!'}
-          </div>
-        )}
 
         <div className="relative flex-1 overflow-hidden">
           {gitNodes.length === 0 ? (
@@ -528,6 +504,16 @@ export default function TreePage() {
         onSubmit={handleRenameConfirm}
         onClose={() => setRenameDialog({ visible: false, branchId: '', currentName: '' })}
       />
+
+      {mergeDialog.visible && (
+        <MergeDialog
+          onMerge={handleTreeMerge}
+          onClose={() => setMergeDialog({ visible: false, targetBranchId: '' })}
+          isLoading={mergeLoading}
+          branches={rawBranches}
+          targetBranchId={mergeDialog.targetBranchId}
+        />
+      )}
     </div>
   );
 }
