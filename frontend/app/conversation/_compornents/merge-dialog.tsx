@@ -41,13 +41,13 @@ export function MergeDialog({ onMerge, onClose, isLoading = false }: MergeDialog
       <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Merge</h2>
-          <button onClick={onClose} className="text-neutral-500 transition-colors hover:text-neutral-300">✕</button>
+          <button onClick={onClose} className="text-neutral-500 transition-colors hover:text-neutral-700 dark:hover:text-neutral-300">✕</button>
         </div>
 
         <div className="mb-4">
-          <label className="mb-1.5 block text-sm font-medium text-neutral-400">Source branch</label>
+          <label className="mb-1.5 block text-sm font-medium text-neutral-600 dark:text-neutral-400">Source branch</label>
           <Select value={sourceBranchId} onValueChange={(val) => setSourceBranchId(val ?? '')}>
-            <SelectTrigger className="w-full text-sm text-neutral-200">
+            <SelectTrigger className="w-full text-sm text-neutral-800 dark:text-neutral-200">
               <SelectValue placeholder="ブランチを選択...">
                 {(value: string | null) => {
                   const branch = otherBranches.find((b) => b.id === value);
@@ -64,13 +64,13 @@ export function MergeDialog({ onMerge, onClose, isLoading = false }: MergeDialog
         </div>
 
         <div className="mb-5">
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">
             Target branch: <span className="font-medium text-neutral-800 dark:text-neutral-200">{branches.find((b) => b.id === activeBranchId)?.name}</span>
           </p>
         </div>
 
         <div className="mb-6">
-          <label className="mb-2 block text-sm font-medium text-neutral-400">Summary strategy</label>
+          <label className="mb-2 block text-sm font-medium text-neutral-600 dark:text-neutral-400">Summary strategy</label>
           <div className="space-y-1">
             {STRATEGIES.map((s) => (
               <label
@@ -99,7 +99,7 @@ export function MergeDialog({ onMerge, onClose, isLoading = false }: MergeDialog
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+            className="rounded-lg px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
           >
             キャンセル
           </button>

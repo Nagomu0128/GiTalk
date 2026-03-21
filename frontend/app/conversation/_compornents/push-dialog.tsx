@@ -86,19 +86,19 @@ export function PushDialog({ conversationId, onClose }: PushDialogProps) {
       <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Push</h2>
-          <button onClick={onClose} className="text-neutral-500 transition-colors hover:text-neutral-300">✕</button>
+          <button onClick={onClose} className="text-neutral-500 transition-colors hover:text-neutral-700 dark:hover:text-neutral-300">✕</button>
         </div>
 
         <div className="mb-5 flex gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800">
           <button
             onClick={() => setMode('new')}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm transition-colors ${mode === 'new' ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100' : 'text-neutral-400 hover:text-neutral-300'}`}
+            className={`flex-1 rounded-md px-3 py-1.5 text-sm transition-colors ${mode === 'new' ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100' : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300'}`}
           >
             新規作成
           </button>
           <button
             onClick={() => setMode('existing')}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm transition-colors ${mode === 'existing' ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100' : 'text-neutral-400 hover:text-neutral-300'}`}
+            className={`flex-1 rounded-md px-3 py-1.5 text-sm transition-colors ${mode === 'existing' ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100' : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300'}`}
           >
             既存を選択
           </button>
@@ -110,20 +110,20 @@ export function PushDialog({ conversationId, onClose }: PushDialogProps) {
               value={newRepoTitle}
               onChange={(e) => setNewRepoTitle(e.target.value)}
               placeholder="リポジトリ名"
-              className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 dark:border-neutral-700 dark:bg-neutral-800 py-2 text-sm text-neutral-200 placeholder-neutral-500 outline-none transition-colors focus:border-neutral-500"
+              className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 dark:border-neutral-700 dark:bg-neutral-800 py-2 text-sm text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 dark:placeholder-neutral-500 outline-none transition-colors focus:border-neutral-500"
             />
             <input
               value={newRepoDescription}
               onChange={(e) => setNewRepoDescription(e.target.value)}
               placeholder="説明（任意）"
-              className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 dark:border-neutral-700 dark:bg-neutral-800 py-2 text-sm text-neutral-200 placeholder-neutral-500 outline-none transition-colors focus:border-neutral-500"
+              className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 dark:border-neutral-700 dark:bg-neutral-800 py-2 text-sm text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 dark:placeholder-neutral-500 outline-none transition-colors focus:border-neutral-500"
             />
             <div className="flex gap-4">
-              <label className="flex items-center gap-2 text-sm text-neutral-300">
+              <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
                 <input type="radio" checked={visibility === 'private'} onChange={() => setVisibility('private')} className="accent-neutral-400" />
                 Private
               </label>
-              <label className="flex items-center gap-2 text-sm text-neutral-300">
+              <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
                 <input type="radio" checked={visibility === 'public'} onChange={() => setVisibility('public')} className="accent-neutral-400" />
                 Public
               </label>
@@ -136,7 +136,7 @@ export function PushDialog({ conversationId, onClose }: PushDialogProps) {
             <select
               value={selectedRepoId}
               onChange={(e) => setSelectedRepoId(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 dark:border-neutral-700 dark:bg-neutral-800 py-2 text-sm text-neutral-200 outline-none transition-colors focus:border-neutral-500"
+              className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 dark:border-neutral-700 dark:bg-neutral-800 py-2 text-sm text-neutral-800 dark:text-neutral-200 outline-none transition-colors focus:border-neutral-500"
             >
               <option value="">リポジトリを選択...</option>
               {repos.map((r) => <option key={r.id} value={r.id}>{r.title}</option>)}
@@ -145,10 +145,10 @@ export function PushDialog({ conversationId, onClose }: PushDialogProps) {
         )}
 
         <div className="mb-5">
-          <p className="mb-2 text-sm font-medium text-neutral-400">ブランチ選択</p>
+          <p className="mb-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">ブランチ選択</p>
           <div className="space-y-1">
             {branches.map((branch) => (
-              <label key={branch.id} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-neutral-300 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800">
+              <label key={branch.id} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-neutral-700 dark:text-neutral-300 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800">
                 <input
                   type="checkbox"
                   checked={selectedBranches.has(branch.id)}
@@ -164,7 +164,7 @@ export function PushDialog({ conversationId, onClose }: PushDialogProps) {
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+            className="rounded-lg px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
           >
             キャンセル
           </button>
