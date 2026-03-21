@@ -27,15 +27,25 @@ export const ColoredEdgeComponent = memo(({
   const edgeColor = isHighlighted ? HIGHLIGHT_COLOR : (data?.edgeColor ?? '#888');
   const strokeWidth = isHighlighted ? 3 : isDashedArrow ? 1.5 : 2;
 
-  // Merge/cherry-pick: straight dashed line using Top/Bottom handles
+  // Merge/cherry-pick: straight dashed line, shortened to not overlap nodes
   if (isDashedArrow) {
+    const dx = targetX - sourceX;
+    const dy = targetY - sourceY;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const pad = 8;
+    const ratio = len > pad * 2 ? pad / len : 0;
+    const x1 = sourceX + dx * ratio;
+    const y1 = sourceY + dy * ratio;
+    const x2 = targetX - dx * ratio;
+    const y2 = targetY - dy * ratio;
+
     return (
       <line
         id={id}
-        x1={sourceX}
-        y1={sourceY}
-        x2={targetX}
-        y2={targetY}
+        x1={x1}
+        y1={y1}
+        x2={x2}
+        y2={y2}
         stroke={edgeColor}
         strokeWidth={strokeWidth}
         strokeDasharray="4 3"
