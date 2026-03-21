@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { UserPlus, UserMinus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/auth-store';
 import { RepositoryCard } from '../_components/repository-card';
@@ -26,6 +27,9 @@ type UserProfile = {
   readonly id: string;
   readonly displayName: string;
   readonly avatarUrl: string | null;
+  readonly followersCount: number;
+  readonly followingCount: number;
+  readonly isFollowing: boolean;
 };
 
 export default function UserRepositoriesPage() {
@@ -109,6 +113,30 @@ export default function UserRepositoriesPage() {
     setDeleteTarget(null);
   };
 
+  const [followLoading, setFollowLoading] = useState(false);
+
+  const handleToggleFollow = useCallback(async () => {
+    if (!targetUser || !user) return;
+    setFollowLoading(true);
+    const token = await user.getIdToken();
+    const isCurrentlyFollowing = targetUser.isFollowing;
+    const res = await fetch(`${API}/v1/users/${targetUser.id}/follow`, {
+      method: isCurrentlyFollowing ? 'DELETE' : 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      setTargetUser((prev) => prev ? {
+        ...prev,
+        isFollowing: !isCurrentlyFollowing,
+        followersCount: prev.followersCount + (isCurrentlyFollowing ? -1 : 1),
+      } : prev);
+      toast.success(isCurrentlyFollowing ? 'Unfollowed' : 'Followed');
+    } else {
+      toast.error('Failed');
+    }
+    setFollowLoading(false);
+  }, [targetUser, user]);
+
   if (notFound) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center">
@@ -149,6 +177,36 @@ export default function UserRepositoriesPage() {
           </h1>
           {isOwner && user?.email && (
             <p className="mt-1 text-sm text-neutral-500">{user.email}</p>
+          )}
+
+          {/* Follow counts */}
+          {targetUser && (
+            <div className="mt-3 flex items-center gap-4 text-sm">
+              <span className="text-neutral-700 dark:text-neutral-300">
+                <span className="font-semibold">{targetUser.followersCount}</span>
+                <span className="ml-1 text-neutral-500">followers</span>
+              </span>
+              <span className="text-neutral-700 dark:text-neutral-300">
+                <span className="font-semibold">{targetUser.followingCount}</span>
+                <span className="ml-1 text-neutral-500">following</span>
+              </span>
+            </div>
+          )}
+
+          {/* Follow button */}
+          {targetUser && !isOwner && myDbId && (
+            <button
+              onClick={handleToggleFollow}
+              disabled={followLoading}
+              className={`mt-4 flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
+                targetUser.isFollowing
+                  ? 'border border-neutral-300 bg-white text-neutral-700 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-red-900/30 dark:hover:text-red-400'
+                  : 'bg-neutral-800 text-white hover:bg-neutral-700 dark:bg-neutral-200 dark:text-neutral-900 dark:hover:bg-neutral-300'
+              }`}
+            >
+              {targetUser.isFollowing ? <UserMinus size={16} /> : <UserPlus size={16} />}
+              {targetUser.isFollowing ? 'Unfollow' : 'Follow'}
+            </button>
           )}
         </div>
 
