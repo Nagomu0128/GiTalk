@@ -1,170 +1,109 @@
-# GiTalk — Git + Talk
+<p align="center">
+  <img src="image.png" alt="GiTalk" width="600" />
+</p>
 
-AIチャットに Git / GitHub のコンセプトを融合し、会話の**分岐・管理・保存・共有**を構造的に行えるアプリケーション。
+<p align="center">
+  <strong>AIとの会話を、もっと構造的に。</strong><br />
+  会話を分岐し、管理し、共有する ── Git x AI Chat の新しい体験。
+</p>
 
-## 解決する課題
+<p align="center">
+  <a href="https://gitalk.jp">gitalk.jp</a>
+</p>
 
-- **会話の埋没** — 長い会話から過去の議論を見つけ出すのが困難
-- **単線的な会話** — 一つの話題から複数の方向に探索できない
-- **会話資産の管理不在** — 過去の会話が時系列で並ぶだけで、構造的に管理・再利用できない
+---
 
-## 主な機能
+## GiTalk とは？
 
-### Git 的機能 — 会話の分岐と操作
+GiTalk は、AI チャットに **Git / GitHub のコンセプト** を融合した新しいタイプの会話アプリケーションです。
 
-- 会話をツリー構造（ノード）として管理
-- 任意のノードからブランチを作成（遡及的分岐）
-- branch / switch / merge / reset / diff を GUI で提供
-- React Flow + ELK.js による会話ツリーの可視化
+普段の AI チャットでは、一度の会話で一つの方向にしか話を進められません。過去のやりとりは時系列に埋もれ、再利用も共有も困難です。
 
-### GitHub 的機能 — 会話の保存と共有
+GiTalk では、会話を**ツリー構造**で管理。任意の時点から**分岐**させ、並行して複数の話題を探索し、結論を**統合**し、構造ごと**保存・共有**できます。
 
-- 会話ツリー全体を「リポジトリ」として保存
-- 公開範囲の制御（private / public）
-- 選択的 push（全ブランチ or 特定ブランチ）
+---
 
-### AI チャット
+## できること
 
-- Gemini API によるストリーミング応答（SSE）
-- コンテキストモード（full / summary / minimal）で会話履歴の送信量を制御
+### 会話を分岐する
 
-## 技術スタック
+会話の任意のポイントから、新しいブランチを作成できます。「もしこっちの方向で話を進めたら？」という思考実験を、会話を壊すことなく何本でも並行して行えます。
 
-| レイヤー | 技術 |
-|---------|------|
-| フロントエンド | Next.js 16 / React 19 / TypeScript |
-| UI | Tailwind CSS 4 / shadcn/ui / React Flow / ELK.js |
-| 状態管理 | Zustand |
-| バックエンド | Hono.js / TypeScript |
-| DB | PostgreSQL 15 / Drizzle ORM |
-| AI | Gemini API（@google/genai） |
-| 認証 | Firebase Authentication |
-| インフラ | GCP（Cloud Run / Cloud SQL / Firebase App Hosting） |
-| IaC | Terraform |
-| CI/CD | Cloud Build |
+- チャット画面のレスポンス横の **+ボタン** からワンクリックで分岐
+- ツリー画面でノードを選択して分岐
+- ブランチ名は自由に設定可能（日本語 OK）
 
-## アーキテクチャ
+### 会話を統合する（マージ）
 
-```
-frontend/          Next.js (App Router)
-├── app/           ページ・レイアウト
-├── components/    UIコンポーネント
-├── stores/        Zustand ストア
-├── hooks/         カスタムフック
-└── lib/           ユーティリティ
+別ブランチで得られた知見や結論を、一つにまとめることができます。マージ時には AI が自動で要約を生成し、要約ノードとしてターゲットブランチに追加されます。
 
-backend/           Hono.js REST API
-├── middleware/    認証・エラーハンドリング・ログ
-├── routes/        APIハンドラ（Zod バリデーション）
-├── service/       ビジネスロジックの統合
-├── domain/        ドメインロジック（外部依存なし）
-├── infra/         DB クエリ・外部 API
-├── db/            Drizzle スキーマ・マイグレーション
-└── shared/        共有ユーティリティ
-```
+- **要約の粒度** を選択可能（簡潔 / 詳細 / 結論のみ）
+- マージの履歴がツリー上で視覚的に表示される（破線エッジ）
 
-## セットアップ
+### チェリーピック
 
-### 前提条件
+別ブランチの特定の会話を、現在のブランチに取り込むことができます。ブランチ全体ではなく、必要な一つのやりとりだけを選んで持ってこれます。
 
-- Node.js 20+
-- pnpm 10+
-- Docker
+### 会話ツリーの可視化
 
-### 1. PostgreSQL の起動
+会話の全体構造を、マインドマップ風のツリービューで俯瞰できます。
 
-```bash
-docker run --name gitalk-db \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=gitalk \
-  -p 5432:5432 \
-  -d postgres:15
-```
+- ブランチごとに色分けされたノードとエッジ
+- アクティブブランチの強調表示
+- マージ・チェリーピックの関係を破線で可視化
+- ノードクリックで会話内容の確認やブランチ操作が可能
 
-### 2. バックエンド
+### リポジトリとして保存・共有
 
-```bash
-cd backend
-pnpm install
+会話ツリー全体を「リポジトリ」として保存できます。GitHub のように、会話を構造ごとアーカイブし、他のユーザーと共有できます。
 
-# .env を作成（以下を設定）
-# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gitalk
-# FIREBASE_PROJECT_ID=<your-project-id>
-# GCP_PROJECT_ID=<your-project-id>
-# GEMINI_API_KEY=<your-api-key>
-# GEMINI_MODEL=gemini-2.0-flash
+- **公開 / 非公開** の設定
+- 全ブランチまたは特定ブランチを選択して保存
+- 他ユーザーのリポジトリを**クローン**して自分の会話として利用可能
 
-# DB マイグレーション
-pnpm db:push
+### ユーザーの検索とフォロー
 
-# 開発サーバー起動
-pnpm dev
-```
+他のユーザーを検索し、フォローすることができます。フォロー中のユーザーの公開リポジトリにアクセスして、会話をクローンできます。
 
-### 3. フロントエンド
+- ユーザー検索機能
+- フォロー / アンフォロー
+- フォロワー・フォロー中リストの閲覧
 
-```bash
-cd frontend
-pnpm install
+### 会話内検索
 
-# .env.local を作成（以下を設定）
-# NEXT_PUBLIC_FIREBASE_API_KEY=<your-api-key>
-# NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=<your-domain>
-# NEXT_PUBLIC_FIREBASE_PROJECT_ID=<your-project-id>
-# NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=<your-bucket>
-# NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=<your-sender-id>
-# NEXT_PUBLIC_FIREBASE_APP_ID=<your-app-id>
-# NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
+サイドバーからの**全会話横断検索**と、チャット画面の虫眼鏡アイコンからの**会話内検索**の 2 種類を提供。検索結果をクリックすると、該当メッセージまでスクロールし、マッチしたテキストがハイライト表示されます。
 
-# 開発サーバー起動
-pnpm dev
-```
+### モデル選択
 
-## 開発コマンド
+会話ごとに使用する AI モデルを切り替えられます。
 
-### フロントエンド
+| モデル | 特徴 |
+|--------|------|
+| Gemini 2.5 Flash | 高速・低コスト（デフォルト） |
+| Gemini 2.5 Pro | 高精度・推論向け |
+| Gemini 2.0 Flash | バランス型 |
+| Gemini 2.0 Flash Lite | 軽量・超低コスト |
 
-| コマンド | 説明 |
-|---------|------|
-| `pnpm dev` | 開発サーバー起動 |
-| `pnpm build` | プロダクションビルド |
-| `pnpm lint` | ESLint 実行 |
-| `pnpm fix` | Prettier でフォーマット |
+### ライト / ダークモード
 
-### バックエンド
+サイドバーのテーマ切替ボタンで、ライトモードとダークモードを即座に切り替え可能。設定はブラウザに保存され、次回アクセス時も維持されます。
 
-| コマンド | 説明 |
-|---------|------|
-| `pnpm dev` | 開発サーバー起動（ホットリロード） |
-| `pnpm build` | TypeScript コンパイル |
-| `pnpm test` | テスト実行 |
-| `pnpm db:generate` | マイグレーションファイル生成 |
-| `pnpm db:push` | スキーマを DB に反映 |
-| `pnpm db:studio` | Drizzle Studio 起動 |
+---
 
-## デプロイ
+## 画面構成
 
-```
-GitHub Push (main)
-├── Frontend: Firebase App Hosting（自動デプロイ）
-└── Backend: Cloud Build
-    ├── Lint
-    ├── DB マイグレーション
-    ├── Docker ビルド → Artifact Registry
-    └── Cloud Run へデプロイ
-```
+| 画面 | 説明 |
+|------|------|
+| **ランディングページ** | サービス紹介とログインへの導線 |
+| **ダッシュボード** | 会話一覧の表示、新規会話の作成 |
+| **チャット画面** | AI との会話。ブランチ切替・マージ・Diff 機能付き |
+| **ツリー画面** | 会話ツリーの可視化。ノード操作・ブランチ管理 |
+| **リポジトリ画面** | 保存した会話の閲覧。ブランチ選択・クローン |
+| **ユーザープロフィール** | リポジトリ一覧・フォロー/フォロワー |
 
-## ドキュメント
+---
 
-詳細な仕様書は `docs/specs/` を参照:
+## リンク
 
-- `00-overview.md` — プロジェクト概要
-- `01-data-model.md` — データモデル
-- `02-core-features.md` — Git 的機能仕様
-- `03-repository.md` — GitHub 的機能仕様
-- `04-ai-integration.md` — AI 統合
-- `05-ui-ux.md` — UI/UX 設計
-- `06-auth-and-access.md` — 認証・アクセス制御
-- `07-api-design.md` — REST API 設計
-- `08-infrastructure.md` — インフラ構成
+- **サービス URL**: [gitalk.jp](https://gitalk.jp)
+- **詳細な仕様書**: `docs/specs/` ディレクトリを参照
