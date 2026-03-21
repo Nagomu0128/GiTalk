@@ -16,8 +16,9 @@ export const DotNodeComponent = memo(({ data }: NodeProps<RFNode<DotNodeData>>) 
     >
       <Handle type="target" position={Position.Left} id="left" className="!bg-transparent !border-0 !w-0 !h-0" />
       <Handle type="source" position={Position.Right} id="right" className="!bg-transparent !border-0 !w-0 !h-0" />
-      <Handle type="target" position={Position.Top} id="top" className="!bg-transparent !border-0 !w-0 !h-0" />
-      <Handle type="source" position={Position.Bottom} id="bottom" className="!bg-transparent !border-0 !w-0 !h-0" />
+      {/* Center handles for dashed edges - positioned at exact center */}
+      <Handle type="target" position={Position.Top} id="center-target" className="!bg-transparent !border-0 !w-0 !h-0 !top-1/2 !left-1/2 !-translate-x-1/2 !-translate-y-1/2" />
+      <Handle type="source" position={Position.Bottom} id="center-source" className="!bg-transparent !border-0 !w-0 !h-0 !top-1/2 !left-1/2 !-translate-x-1/2 !-translate-y-1/2" />
       <span className={`block ${data.isMergeDot ? 'h-[6px] w-[6px]' : 'h-[10px] w-[10px] group-hover:h-[14px] group-hover:w-[14px]'} rounded-full ${dotColor} transition-all`} />
     </div>
   );
