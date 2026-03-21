@@ -77,7 +77,7 @@ export function PushDialog({ conversationId, onClose }: PushDialogProps) {
     });
 
     setLoading(false);
-    if (pushRes.ok) { toast.success('リポジトリに保存しました'); onClose(); }
+    if (pushRes.ok) { toast.success('Push しました'); onClose(); }
     else { const err = await pushRes.json(); toast.error(err.error?.message ?? 'Push に失敗しました'); }
   };
 
@@ -85,7 +85,7 @@ export function PushDialog({ conversationId, onClose }: PushDialogProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">リポジトリに保存</h2>
+          <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Push</h2>
           <button onClick={onClose} className="text-neutral-500 transition-colors hover:text-neutral-300">✕</button>
         </div>
 
@@ -173,7 +173,7 @@ export function PushDialog({ conversationId, onClose }: PushDialogProps) {
             disabled={loading || (mode === 'existing' && !selectedRepoId) || selectedBranches.size === 0}
             className="rounded-lg bg-neutral-200 px-4 py-2 text-sm font-medium text-neutral-900 transition-colors hover:bg-white disabled:opacity-40"
           >
-            {loading ? '保存中...' : '保存する'}
+            {loading ? 'Pushing...' : 'Push'}
           </button>
         </div>
       </div>

@@ -32,10 +32,10 @@ export const ConversationHeader = ({
       <button
         onClick={onPush}
         className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-300 px-2.5 text-xs text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-        title="リポジトリに保存"
+        title="Push"
       >
         <Save size={14} />
-        <span>保存</span>
+        <span>Push</span>
       </button>
       <button
         onClick={onSearch}

@@ -6,9 +6,9 @@ import { useThemeImage } from '@/hooks/use-theme-image';
 
 const FEATURE_KEYS = ['branch', 'merge', 'box'] as const;
 const FEATURE_DATA = [
-  { key: 'branch' as const, title: '分岐する', description: '会話を好きなだけ枝分かれさせて並行探索', size: 96 },
-  { key: 'merge' as const, title: '統合する', description: 'ブランチの結論を一つにまとめる', size: 96 },
-  { key: 'box' as const, title: '保存する', description: 'リポジトリとして構造ごと保存', size: 72 },
+  { key: 'branch' as const, title: 'Branch', description: '会話を好きなだけ枝分かれさせて並行探索', size: 96 },
+  { key: 'merge' as const, title: 'Merge', description: 'ブランチの結論を一つにまとめる', size: 96 },
+  { key: 'box' as const, title: 'Push', description: 'リポジトリとして構造ごと保存', size: 72 },
 ] as const;
 
 const FeatureCard = ({ featureKey, title, description, size }: { readonly featureKey: typeof FEATURE_KEYS[number]; readonly title: string; readonly description: string; readonly size: number }) => {
