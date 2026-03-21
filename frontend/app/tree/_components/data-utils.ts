@@ -260,7 +260,11 @@ export const buildReactFlowNodes = (
 export const buildReactFlowEdges = (
   allEdges: ReadonlyArray<GraphEdge>, highlightedEdgeIds: ReadonlySet<string>,
 ): RFEdge<ColoredEdgeData>[] =>
-  allEdges.map((edge) => ({
+  allEdges.map((edge) => {
+    const isDashed = edge.edgeType === 'merge-arrow' || edge.edgeType === 'cherry-pick-arrow';
+    return {
     id: edge.id, source: edge.fromNodeId, target: edge.toNodeId, type: 'coloredEdge',
+    ...(isDashed ? { sourceHandle: 'center-source', targetHandle: 'center-target' } : {}),
     data: { edgeColor: edge.defaultColor, isHighlighted: highlightedEdgeIds.has(edge.id), edgeType: edge.edgeType },
-  }));
+  };
+  });

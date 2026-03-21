@@ -27,41 +27,30 @@ export const ColoredEdgeComponent = memo(({
   const edgeColor = isHighlighted ? HIGHLIGHT_COLOR : (data?.edgeColor ?? '#888');
   const strokeWidth = isHighlighted ? 3 : isDashedArrow ? 1.5 : 2;
 
-  // Merge/cherry-pick arrows: vertical path (top/bottom → target)
+  // Merge/cherry-pick: straight dashed line, shortened to not overlap nodes
   if (isDashedArrow) {
-    const markerId = `arrow-${edgeType}-${id}`;
-    const goingDown = targetY > sourceY;
-    const exitY = goingDown ? sourceY + 6 : sourceY - 6;
-    const entryY = goingDown ? targetY - 6 : targetY + 6;
-    const midY = (exitY + entryY) / 2;
-
-    const path = `M ${sourceX} ${exitY} L ${targetX} ${entryY}`;
+    const dx = targetX - sourceX;
+    const dy = targetY - sourceY;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const pad = 8;
+    const ratio = len > pad * 2 ? pad / len : 0;
+    const x1 = sourceX + dx * ratio;
+    const y1 = sourceY + dy * ratio;
+    const x2 = targetX - dx * ratio;
+    const y2 = targetY - dy * ratio;
 
     return (
-      <>
-        <defs>
-          <marker
-            id={markerId}
-            markerWidth="8"
-            markerHeight="6"
-            refX="7"
-            refY="3"
-            orient="auto"
-          >
-            <polygon points="0 0, 8 3, 0 6" fill={edgeColor} />
-          </marker>
-        </defs>
-        <path
-          id={id}
-          d={path}
-          fill="none"
-          stroke={edgeColor}
-          strokeWidth={strokeWidth}
-          strokeDasharray="6 4"
-          markerEnd={`url(#${markerId})`}
-          style={{ transition: 'stroke 0.2s' }}
-        />
-      </>
+      <line
+        id={id}
+        x1={x1}
+        y1={y1}
+        x2={x2}
+        y2={y2}
+        stroke={edgeColor}
+        strokeWidth={strokeWidth}
+        strokeDasharray="4 3"
+        style={{ transition: 'stroke 0.2s' }}
+      />
     );
   }
 
