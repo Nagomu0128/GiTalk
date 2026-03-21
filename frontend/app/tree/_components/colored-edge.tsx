@@ -38,7 +38,7 @@ export const ColoredEdgeComponent = memo(({
         y2={targetY}
         stroke={edgeColor}
         strokeWidth={strokeWidth}
-        strokeDasharray="6 4"
+        strokeDasharray="4 3"
         style={{ transition: 'stroke 0.2s' }}
       />
     );
