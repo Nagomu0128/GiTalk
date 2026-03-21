@@ -180,3 +180,25 @@ export const repositoryNodes = pgTable(
     index('idx_repository_node_parent').on(table.parentRepositoryNodeId),
   ],
 );
+
+// ============================================================
+// Follow
+// ============================================================
+export const follows = pgTable(
+  'follow',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    followerId: uuid('follower_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    followingId: uuid('following_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('idx_follow_unique').on(table.followerId, table.followingId),
+    index('idx_follow_follower').on(table.followerId),
+    index('idx_follow_following').on(table.followingId),
+  ],
+);
