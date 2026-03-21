@@ -28,7 +28,7 @@ export const BranchLabelNodeComponent = memo(({ data }: NodeProps<RFNode<BranchL
       </Badge>
       {data.mergeRole && (
         <span className="text-xs text-amber-500 dark:text-amber-400 whitespace-nowrap">
-          {data.mergeRole === 'merge-target' ? 'merge to 選択中' : 'merge 選択中'}
+          {data.mergeRole === 'merge-target' ? 'merge target' : 'merge source'}
         </span>
       )}
     </div>

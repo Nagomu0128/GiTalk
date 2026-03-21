@@ -437,14 +437,6 @@ export default function TreePage() {
           onHelp={handleHelp}
         />
 
-        {mergeState.status !== 'idle' && (
-          <div className="flex h-8 shrink-0 items-center justify-center text-sm text-amber-400">
-            {mergeState.status === 'selecting-source' && 'mergeを選択してください'}
-            {mergeState.status === 'merging' && 'merge中・・・'}
-            {mergeState.status === 'done' && 'merge完了！'}
-          </div>
-        )}
-
         <div className="relative flex-1 overflow-hidden">
           {gitNodes.length === 0 ? (
             <div className="flex h-full w-full items-center justify-center text-neutral-500">ノードがありません</div>

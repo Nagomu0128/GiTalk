@@ -39,7 +39,7 @@ export const DiffHeader = ({
         <span>チャットに戻る</span>
       </button>
       <span className="text-neutral-600">|</span>
-      <span className="text-sm text-neutral-400">ブランチ比較</span>
+      <span className="text-sm text-neutral-400">Diff</span>
     </div>
 
     <div className="flex items-center gap-3">
