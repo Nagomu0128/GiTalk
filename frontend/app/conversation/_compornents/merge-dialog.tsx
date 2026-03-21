@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useConversationStore } from '@/stores/conversation-store';
+import { useConversationStore, type Branch } from '@/stores/conversation-store';
 import {
   Select,
   SelectContent,
@@ -14,6 +14,8 @@ type MergeDialogProps = {
   readonly onMerge: (sourceBranchId: string, targetBranchId: string, strategy: string) => void;
   readonly onClose: () => void;
   readonly isLoading?: boolean;
+  readonly branches?: ReadonlyArray<Branch>;
+  readonly targetBranchId?: string;
 };
 
 const STRATEGIES = [
@@ -22,23 +24,27 @@ const STRATEGIES = [
   { value: 'conclusion_only', label: '結論のみ', description: '最終的な結論だけ' },
 ] as const;
 
-export function MergeDialog({ onMerge, onClose, isLoading = false }: MergeDialogProps) {
-  const branches = useConversationStore((s) => s.branches);
-  const activeBranchId = useConversationStore((s) => s.activeBranchId);
+export function MergeDialog({ onMerge, onClose, isLoading = false, branches: branchesProp, targetBranchId: targetProp }: MergeDialogProps) {
+  const storeBranches = useConversationStore((s) => s.branches);
+  const storeActiveBranchId = useConversationStore((s) => s.activeBranchId);
+
+  const branches = branchesProp ?? storeBranches;
+  const targetBranchId = targetProp ?? storeActiveBranchId ?? '';
 
   const [sourceBranchId, setSourceBranchId] = useState('');
   const [strategy, setStrategy] = useState('detailed');
 
-  const otherBranches = branches.filter((b) => b.id !== activeBranchId);
+  const otherBranches = branches.filter((b) => b.id !== targetBranchId);
+  const targetBranch = branches.find((b) => b.id === targetBranchId);
 
   const handleSubmit = () => {
-    if (!sourceBranchId || !activeBranchId) return;
-    onMerge(sourceBranchId, activeBranchId, strategy);
+    if (!sourceBranchId || !targetBranchId) return;
+    onMerge(sourceBranchId, targetBranchId, strategy);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xl dark:border-neutral-700 dark:bg-neutral-900" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">会話を統合</h2>
           <button onClick={onClose} className="text-neutral-500 transition-colors hover:text-neutral-700 dark:hover:text-neutral-300">✕</button>
@@ -65,7 +71,7 @@ export function MergeDialog({ onMerge, onClose, isLoading = false }: MergeDialog
 
         <div className="mb-5">
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            マージ先: <span className="font-medium text-neutral-800 dark:text-neutral-200">{branches.find((b) => b.id === activeBranchId)?.name}</span>
+            マージ先: <span className="font-medium text-neutral-800 dark:text-neutral-200">{targetBranch?.name ?? ''}</span>
           </p>
         </div>
 
@@ -99,14 +105,14 @@ export function MergeDialog({ onMerge, onClose, isLoading = false }: MergeDialog
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+            className="rounded-lg px-4 py-2 text-sm text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
           >
             キャンセル
           </button>
           <button
             onClick={handleSubmit}
             disabled={!sourceBranchId || isLoading}
-            className="rounded-lg bg-neutral-200 px-4 py-2 text-sm font-medium text-neutral-900 transition-colors hover:bg-white disabled:opacity-40"
+            className="rounded-lg bg-neutral-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-40 dark:bg-neutral-200 dark:text-neutral-900 dark:hover:bg-white"
           >
             {isLoading ? '要約を生成中...' : '統合する'}
           </button>
