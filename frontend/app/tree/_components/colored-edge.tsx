@@ -5,6 +5,7 @@ import {
   type Edge as RFEdge,
   type EdgeProps,
   getBezierPath,
+  getStraightPath,
   BaseEdge,
 } from '@xyflow/react';
 import type { ColoredEdgeData } from './types';
@@ -27,15 +28,10 @@ export const ColoredEdgeComponent = memo(({
   const edgeColor = isHighlighted ? HIGHLIGHT_COLOR : (data?.edgeColor ?? '#888');
   const strokeWidth = isHighlighted ? 3 : isDashedArrow ? 1.5 : 2;
 
-  // Merge/cherry-pick arrows: vertical path (top/bottom → target)
+  // Merge/cherry-pick: straight dashed line using Top/Bottom handles
   if (isDashedArrow) {
     const markerId = `arrow-${edgeType}-${id}`;
-    const goingDown = targetY > sourceY;
-    const exitY = goingDown ? sourceY + 6 : sourceY - 6;
-    const entryY = goingDown ? targetY - 6 : targetY + 6;
-    const midY = (exitY + entryY) / 2;
-
-    const path = `M ${sourceX} ${exitY} L ${targetX} ${entryY}`;
+    const [edgePath] = getStraightPath({ sourceX, sourceY, targetX, targetY });
 
     return (
       <>
@@ -51,15 +47,16 @@ export const ColoredEdgeComponent = memo(({
             <polygon points="0 0, 8 3, 0 6" fill={edgeColor} />
           </marker>
         </defs>
-        <path
+        <BaseEdge
           id={id}
-          d={path}
-          fill="none"
-          stroke={edgeColor}
-          strokeWidth={strokeWidth}
-          strokeDasharray="6 4"
-          markerEnd={`url(#${markerId})`}
-          style={{ transition: 'stroke 0.2s' }}
+          path={edgePath}
+          style={{
+            stroke: edgeColor,
+            strokeWidth,
+            strokeDasharray: '6 4',
+            markerEnd: `url(#${markerId})`,
+            transition: 'stroke 0.2s',
+          }}
         />
       </>
     );
